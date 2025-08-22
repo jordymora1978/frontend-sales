@@ -1,0 +1,11 @@
+{
+  "build": {
+    "env": {
+      "REACT_APP_API_URL": "https://api.dropux.co",
+      "REACT_APP_ENV": "production"
+    }
+  },
+  "framework": "create-react-app",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build"
+}
