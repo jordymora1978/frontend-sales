@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Eye, Truck } from 'lucide-react';
 
-const OrdersPageCustom = () => {
+const OrdersPageCustom = ({ onOpenModal, onSelectOrder }) => {
   const [orders, setOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
@@ -267,15 +267,33 @@ const OrdersPageCustom = () => {
 
               {/* Acciones */}
               <div className="actions-section">
-                <button className="action-btn primary">
+                <button 
+                  className="action-btn primary"
+                  onClick={() => {
+                    if (onSelectOrder) onSelectOrder(order);
+                    if (onOpenModal) onOpenModal('messages');
+                  }}
+                >
                   <MessageSquare size={14} />
                   Mensaje
                 </button>
-                <button className="action-btn secondary">
+                <button 
+                  className="action-btn secondary"
+                  onClick={() => {
+                    if (onSelectOrder) onSelectOrder(order);
+                    if (onOpenModal) onOpenModal('logistics');
+                  }}
+                >
                   <Eye size={14} />
                   Ver Detalles
                 </button>
-                <button className="action-btn secondary">
+                <button 
+                  className="action-btn secondary"
+                  onClick={() => {
+                    if (onSelectOrder) onSelectOrder(order);
+                    if (onOpenModal) onOpenModal('logistics');
+                  }}
+                >
                   <Truck size={14} />
                   Tracking
                 </button>
