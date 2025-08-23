@@ -25,7 +25,7 @@ class AuthService {
     // Request interceptor - add auth header
     axios.interceptors.request.use(
       (config) => {
-        if (this.token && this.isValidApiUrl(config.url)) {
+        if (this.token && this.isValidApiUrl(config.url) && !config.skipAuthInterceptor) {
           config.headers.Authorization = `Bearer ${this.token}`;
         }
         return config;
@@ -41,7 +41,7 @@ class AuthService {
       async (error) => {
         const originalRequest = error.config;
         
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.skipAuthInterceptor) {
           originalRequest._retry = true;
           
           try {
@@ -72,12 +72,12 @@ class AuthService {
    */
   async login(email, password) {
     try {
-      // Use a separate axios instance to avoid interceptors during login
-      const loginAxios = axios.create();
-      
-      const response = await loginAxios.post(`${AUTH_API_URL}/auth/login`, {
+      const response = await axios.post(`${AUTH_API_URL}/auth/login`, {
         email,
         password
+      }, {
+        // Skip interceptors for this request specifically
+        skipAuthInterceptor: true
       });
 
       if (response.data.access_token) {
