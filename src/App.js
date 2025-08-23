@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import SalesDashboard from './components/SalesDashboard';
+import SalesDashboardUnified from './components/SalesDashboardUnified';
 import Login from './components/Login';
 import './App.css';
 
@@ -36,7 +36,7 @@ const AppRoutes = () => {
           <Route path="/login" element={<AuthenticatedLogin />} />
           <Route 
             path="/" 
-            element={<SalesDashboard />} 
+            element={<SalesDashboardUnified />} 
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

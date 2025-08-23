@@ -1,0 +1,359 @@
+/* UNIFIED SIDEBAR - Hub de Navegación Unificado */
+
+.unified-sidebar {
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Header del Hub */
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.app-info h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.app-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Navegación */
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+.nav-section {
+  margin-bottom: 8px;
+}
+
+/* Encabezado de sección */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 0 12px;
+}
+
+.section-header:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.section-header.coming-soon {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.section-header.coming-soon:hover {
+  background: rgba(156, 163, 175, 0.1);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  color: #6b7280;
+}
+
+.chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.coming-soon-badge {
+  font-size: 10px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Items de sección */
+.section-items {
+  margin-left: 20px;
+  border-left: 2px solid #f1f5f9;
+  padding-left: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  margin: 2px 12px 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+  transform: translateX(2px);
+}
+
+.nav-item:hover::before {
+  background: #3b82f6;
+  transform: translateY(-50%) scale(1.2);
+}
+
+/* Items nativos (Sales) */
+.nav-item.native.active {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.nav-item.native.active::before {
+  background: white;
+  transform: translateY(-50%) scale(1.3);
+}
+
+/* Items externos (Control/Products) */
+.nav-item.external {
+  border: 1px solid transparent;
+}
+
+.nav-item.external:hover {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.nav-item.native.active .item-name {
+  color: white;
+}
+
+.item-description {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.external-icon {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item.external:hover .external-icon {
+  opacity: 1;
+}
+
+/* Footer del sidebar */
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.app-version {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.ecosystem-info {
+  text-align: center;
+}
+
+.ecosystem-label {
+  font-size: 10px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.app-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.app-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.app-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.app-dot.available {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+}
+
+.app-dot.coming-soon {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+/* Scrollbar personalizado */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .unified-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .sidebar-nav {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .section-items {
+    margin-left: 10px;
+  }
+  
+  .nav-item {
+    margin: 2px 8px;
+  }
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.section-items {
+  animation: slideIn 0.3s ease;
+}
+
+/* Estados de carga */
+.unified-sidebar.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.unified-sidebar.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
