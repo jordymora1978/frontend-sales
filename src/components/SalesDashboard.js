@@ -1,29 +1,72 @@
-import React, { useState } from 'react';
-import { User, Package, Truck, Eye, MessageSquare, ExternalLink, Sun, Moon, ShoppingCart, Users, Settings, BarChart3, X, Send, HelpCircle, MapPin, FileText, Edit3, Save, Store, Plus, CheckCircle, Globe, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Package, Truck, Eye, MessageSquare, ExternalLink, Sun, Moon, ShoppingCart, Users, Settings, BarChart3, X, Send, HelpCircle, MapPin, FileText, Clipboard, Edit3, Save, Store, Plus, CheckCircle, AlertCircle, Globe, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ConnectMLStore from './ConnectMLStore.jsx';
+import MLOrdersSync from '../pages/MLOrdersSync';
+import OrdersCollapsible from '../pages/OrdersCollapsible';
+import apiService from '../services/api';
 
 const SalesDashboard = () => {
   const { user, logout } = useAuth();
-
+  
   // Dashboard states  
   const [theme, setTheme] = useState('light');
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  // const [currentPage, setCurrentPage] = useState(1); // Comentado temporalmente
   const [activeTab, setActiveTab] = useState('orders');
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalTab, setModalTab] = useState('messages');
   const [messageInput, setMessageInput] = useState('');
   const [isEditingPublication, setIsEditingPublication] = useState(false);
-  // const [publicationData, setPublicationData] = useState({}); // Comentado temporalmente
   
   // ML Stores states
-  const [mlStores] = useState([]);
+  const [showConnectML, setShowConnectML] = useState(false);
+  const [mlStores, setMlStores] = useState([]);
 
   const handleLogout = () => {
     logout();
   };
+
+  // Load ML stores
+  const loadMLStores = async () => {
+    try {
+      const response = await apiService.request('/api/ml/my-stores');
+      setMlStores(response || []);
+    } catch (error) {
+      console.error('Error loading ML stores:', error);
+    }
+  };
+
+  // Handle successful ML connection
+  const handleMLConnectionSuccess = () => {
+    setShowConnectML(false);
+    loadMLStores();
+  };
+
+  // Delete ML store
+  const deleteMLStore = async (storeId, storeName) => {
+    if (!window.confirm(`¿Estás seguro de que quieres eliminar la tienda "${storeName}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      await apiService.request(`/api/ml/stores/${storeId}`, {
+        method: 'DELETE'
+      });
+      
+      loadMLStores();
+      alert('Tienda eliminada correctamente');
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      alert('Error al eliminar la tienda. Inténtalo de nuevo.');
+    }
+  };
+
+  // Load stores when component mounts
+  useEffect(() => {
+    loadMLStores();
+  }, []);
 
   // Datos de ejemplo para el dashboard
   const mockOrders = [
@@ -96,30 +139,6 @@ const SalesDashboard = () => {
       minutesAgo: 120,
       quantity: 1,
       dateCreated: '2025-01-15 12:30:00'
-    },
-    {
-      id: 'MCO-2025004',
-      marketplaceBadge: 'colombia',
-      productImage: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop',
-      sku: 'B08Z7GQXM2',
-      productTitle: 'Smart Watch Deportivo con Monitor de Frecuencia Cardíaca',
-      mercadoLibreLink: 'https://articulo.mercadolibre.com.co/MCO-444555666-smart-watch-deportivo-monitor-frecuencia-cardiaca',
-      status: 'shipped',
-      shippingStatus: 'shipped',
-      customerName: 'Luis Pérez',
-      customerDocument: 'CC 8901234567',
-      customerPhone: '+57 301 987 6543',
-      customerEmail: 'luis.perez@email.com',
-      price: 125000,
-      commission: 18750,
-      netAmount: 106250,
-      amazonDate: '2025-01-12',
-      amazonPrice: 59.99,
-      amazonLink: 'https://amazon.com/dp/B08Z7GQXM2',
-      amazonGSS: true,
-      minutesAgo: 180,
-      quantity: 2,
-      dateCreated: '2025-01-15 11:30:00'
     }
   ];
 
@@ -127,27 +146,13 @@ const SalesDashboard = () => {
   const mockMessages = {
     'MCO-2025001': [
       { id: 1, sender: 'customer', text: 'Hola, ¿cuando llegará mi pedido?', time: '10:30 AM', date: '2025-01-15' },
-      { id: 2, sender: 'seller', text: 'Buenos días! Su pedido fue despachado hoy y llegará en 3-5 días hábiles.', time: '10:45 AM', date: '2025-01-15' },
-      { id: 3, sender: 'customer', text: '¿Puedo rastrear el envío?', time: '11:00 AM', date: '2025-01-15' },
-      { id: 4, sender: 'seller', text: 'Por supuesto! Le comparto el número de guía: ANI-CO-789456123', time: '11:15 AM', date: '2025-01-15' },
-      { id: 5, sender: 'customer', text: 'Perfecto, muchas gracias!', time: '11:20 AM', date: '2025-01-15' }
-    ],
-    'MLC-2025002': [
-      { id: 1, sender: 'customer', text: '¿El producto es original?', time: '09:00 AM', date: '2025-01-14' },
-      { id: 2, sender: 'seller', text: 'Sí, todos nuestros productos son 100% originales con garantía.', time: '09:30 AM', date: '2025-01-14' },
-      { id: 3, sender: 'customer', text: 'Excelente, ya realicé el pago', time: '10:00 AM', date: '2025-01-14' }
+      { id: 2, sender: 'seller', text: 'Buenos días! Su pedido fue despachado hoy y llegará en 3-5 días hábiles.', time: '10:45 AM', date: '2025-01-15' }
     ]
   };
 
   const mockQuestions = {
     'MCO-2025001': [
-      { id: 1, question: '¿El producto incluye garantía?', answer: 'Sí, incluye garantía de 12 meses.', time: '2 días atrás', answered: true },
-      { id: 2, question: '¿Es compatible con iPhone?', answer: 'Sí, es compatible con iPhone y Android.', time: '3 días atrás', answered: true },
-      { id: 3, question: '¿Viene con estuche de carga?', answer: 'Pendiente de respuesta...', time: '5 horas atrás', answered: false }
-    ],
-    'MLC-2025002': [
-      { id: 1, question: '¿Qué tallas tienen disponibles?', answer: 'Disponible en tallas 38-44.', time: '1 día atrás', answered: true },
-      { id: 2, question: '¿El color es igual a la foto?', answer: 'Sí, los colores son exactos a las fotos.', time: '2 días atrás', answered: true }
+      { id: 1, question: '¿El producto incluye garantía?', answer: 'Sí, incluye garantía de 12 meses.', time: '2 días atrás', answered: true }
     ]
   };
 
@@ -158,39 +163,11 @@ const SalesDashboard = () => {
       status: 'En tránsito',
       steps: [
         { status: 'Orden recibida', date: '2025-01-15 08:00', completed: true, location: 'Bogotá, Colombia' },
-        { status: 'En centro de distribución', date: '2025-01-15 12:00', completed: true, location: 'Bogotá, Colombia' },
-        { status: 'En camino', date: '2025-01-16 08:00', completed: true, location: 'Medellín, Colombia' },
-        { status: 'En reparto', date: '2025-01-17 10:00', completed: false, location: 'Medellín, Colombia' },
-        { status: 'Entregado', date: 'Estimado: 2025-01-18', completed: false, location: 'Destino final' }
-      ]
-    },
-    'MLC-2025002': {
-      provider: 'CHILEXPRESS',
-      tracking: 'CHX-CL-456789321',
-      status: 'Entregado',
-      steps: [
-        { status: 'Orden recibida', date: '2025-01-13 09:00', completed: true, location: 'Santiago, Chile' },
-        { status: 'Procesado en bodega', date: '2025-01-13 14:00', completed: true, location: 'Santiago, Chile' },
-        { status: 'En tránsito', date: '2025-01-14 08:00', completed: true, location: 'Valparaíso, Chile' },
-        { status: 'En oficina de destino', date: '2025-01-14 16:00', completed: true, location: 'Valparaíso, Chile' },
-        { status: 'Entregado', date: '2025-01-15 11:30', completed: true, location: 'Valparaíso, Chile' }
-      ]
-    },
-    'MLM-2025003': {
-      provider: 'ANICAM',
-      tracking: 'ANI-PE-321654987',
-      status: 'Procesando',
-      steps: [
-        { status: 'Orden recibida', date: '2025-01-15 10:00', completed: true, location: 'Lima, Perú' },
-        { status: 'En preparación', date: '2025-01-15 14:00', completed: false, location: 'Lima, Perú' },
-        { status: 'Listo para envío', date: 'Pendiente', completed: false, location: 'Lima, Perú' },
-        { status: 'En tránsito', date: 'Pendiente', completed: false, location: '' },
-        { status: 'Entregado', date: 'Pendiente', completed: false, location: '' }
+        { status: 'En centro de distribución', date: '2025-01-15 12:00', completed: true, location: 'Bogotá, Colombia' }
       ]
     }
   };
 
-  // Datos de ejemplo para publicaciones
   const mockPublications = {
     'MCO-2025001': {
       nombre: 'Auriculares Bluetooth Inalámbricos con Cancelación de Ruido Premium',
@@ -201,829 +178,643 @@ const SalesDashboard = () => {
       categoria: 'Electrónicos > Audio > Auriculares',
       estado: 'Activa',
       stock: 25,
-      descripcion: 'Auriculares inalámbricos de alta calidad con tecnología de cancelación de ruido activa. Batería de larga duración hasta 30 horas. Sonido Hi-Fi con drivers de 40mm. Compatibles con iOS y Android.',
+      descripcion: 'Auriculares inalámbricos de alta calidad con tecnología de cancelación de ruido activa.',
       plantilla: 'ELECTRONICA_PREMIUM'
     }
   };
 
+  const stats = {
+    pending: 24,
+    processing: 18,
+    shipped: 42,
+    revenue: 2847650
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  const formatCurrency = (amount, country = 'colombia') => {
+    const formatters = {
+      colombia: new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }),
+      chile: new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }),
+      peru: new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }),
+    };
+    return formatters[country]?.format(amount) || `$${amount.toLocaleString()}`;
+  };
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      pending: { class: 'status-pending', text: 'Pendiente' },
+      approved: { class: 'status-approved', text: 'Aprobado' },
+      processing: { class: 'status-processing', text: 'Procesando' },
+      shipped: { class: 'status-shipped', text: 'Enviado' }
+    };
+    return badges[status] || badges.pending;
+  };
+
+  const getMarketBadge = (market) => {
+    const badges = {
+      colombia: { class: 'market-colombia', text: 'Colombia' },
+      chile: { class: 'market-chile', text: 'Chile' },
+      peru: { class: 'market-peru', text: 'Perú' }
+    };
+    return badges[market] || badges.colombia;
+  };
+
+  const filteredOrders = mockOrders.filter(order => {
+    const matchesFilter = activeFilter === 'all' || order.status === activeFilter;
+    const matchesSearch = order.productTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         order.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 min-h-screen">
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              {/* Logo y título */}
-              <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl shadow-lg">
-                  <ShoppingCart className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Dashboard</h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Gestión de ventas MercadoLibre</p>
-                </div>
+    <div className={`app-layout ${theme}-mode`}>
+      {/* SIDEBAR */}
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">Dropux Sales</div>
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            {theme === 'light' ? ' Modo Oscuro' : ' Modo Claro'}
+          </button>
+        </div>
+        
+        <nav className="sidebar-nav">
+          <button 
+            className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            <ShoppingCart size={18} />
+            Órdenes de Venta
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <BarChart3 size={18} />
+            Dashboard
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}
+            onClick={() => setActiveTab('customers')}
+          >
+            <Users size={18} />
+            Clientes
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
+            onClick={() => setActiveTab('products')}
+          >
+            <Package size={18} />
+            Productos
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'logistics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('logistics')}
+          >
+            <Truck size={18} />
+            Logística
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'ml-stores' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ml-stores')}
+          >
+            <Store size={18} />
+            Tiendas ML
+            {mlStores.length > 0 && (
+              <span className="nav-badge">{mlStores.length}</span>
+            )}
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'ml-sync' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ml-sync')}
+          >
+            <RefreshCw size={18} />
+            Sincronizar Órdenes
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings size={18} />
+            Configuración
+          </button>
+        </nav>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="main-content">
+        {/* TOP HEADER */}
+        <div className="top-header">
+          <div className="header-left">
+            <h1 className="page-title">
+              {activeTab === 'orders' && 'Órdenes de Venta'}
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'customers' && 'Clientes'}
+              {activeTab === 'products' && 'Productos'}
+              {activeTab === 'logistics' && 'Logística'}
+              {activeTab === 'ml-stores' && 'Tiendas MercadoLibre'}
+              {activeTab === 'ml-sync' && 'Sincronizar Órdenes'}
+              {activeTab === 'settings' && 'Configuración'}
+            </h1>
+            {activeTab === 'orders' && (
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Buscar por producto, SKU o cliente..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-
-              {/* User info y acciones */}
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  title="Cambiar tema"
+            )}
+          </div>
+          
+          <div className="header-right">
+            {activeTab === 'orders' && (
+              <>
+                <button 
+                  className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('all')}
                 >
-                  {theme === 'light' ? (
-                    <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  ) : (
-                    <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                  )}
+                  Todas
                 </button>
-
-                <div className="flex items-center space-x-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                  <User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {user?.email || 'Usuario'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {user?.role || 'user'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                <button 
+                  className={`filter-btn ${activeFilter === 'pending' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('pending')}
                 >
-                  Cerrar Sesión
+                  Pendientes
                 </button>
-              </div>
+                <button 
+                  className={`filter-btn ${activeFilter === 'processing' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('processing')}
+                >
+                  Procesando
+                </button>
+                <button 
+                  className={`filter-btn ${activeFilter === 'shipped' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('shipped')}
+                >
+                  Enviadas
+                </button>
+              </>
+            )}
+            <div className="user-info">
+              <User size={16} />
+              {user?.email || 'Usuario'}
+              <button 
+                onClick={handleLogout}
+                style={{ 
+                  marginLeft: '10px', 
+                  padding: '4px 8px', 
+                  fontSize: '12px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Salir
+              </button>
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* Contenido principal */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900">
-                  <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+        {/* CONTENT AREA */}
+        <div className="content-area">
+          {activeTab === 'orders' && (
+            <>
+              {/* STATS ROW */}
+              <div className="stats-row">
+                <div className="stat-card pending">
+                  <div className="stat-number">{stats.pending}</div>
+                  <div className="stat-label">Órdenes Pendientes</div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Órdenes Hoy</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">24</p>
+                <div className="stat-card processing">
+                  <div className="stat-number">{stats.processing}</div>
+                  <div className="stat-label">En Procesamiento</div>
+                </div>
+                <div className="stat-card shipped">
+                  <div className="stat-number">{stats.shipped}</div>
+                  <div className="stat-label">Enviadas Hoy</div>
+                </div>
+                <div className="stat-card revenue">
+                  <div className="stat-number">{formatCurrency(stats.revenue)}</div>
+                  <div className="stat-label">Ingresos del Mes</div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900">
-                  <Users className="h-6 w-6 text-green-600 dark:text-green-300" />
+              {/* ORDERS TABLE */}
+              <div className="orders-table">
+                <div className="table-header">
+                  <div className="th">Producto</div>
+                  <div className="th">Cliente</div>
+                  <div className="th">Estado</div>
+                  <div className="th">Mercado</div>
+                  <div className="th">Precio</div>
+                  <div className="th">Comisión</div>
+                  <div className="th">Neto</div>
+                  <div className="th">Acciones</div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Clientes</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">156</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900">
-                  <Package className="h-6 w-6 text-purple-600 dark:text-purple-300" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Productos</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">89</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900">
-                  <BarChart3 className="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Ingresos</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">$12.4K</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs y filtros */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                {/* Tabs */}
-                <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                  <button
-                    onClick={() => setActiveTab('orders')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'orders'
-                        ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Órdenes
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('ml-stores')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'ml-stores'
-                        ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 shadow-sm'
-                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    Tiendas ML
-                  </button>
-                </div>
-
-                {/* Filtros y búsqueda */}
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setActiveFilter('all')}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeFilter === 'all'
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Todas
-                    </button>
-                    <button
-                      onClick={() => setActiveFilter('pending')}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeFilter === 'pending'
-                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Pendientes
-                    </button>
-                    <button
-                      onClick={() => setActiveFilter('processing')}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeFilter === 'processing'
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Procesando
-                    </button>
-                    <button
-                      onClick={() => setActiveFilter('shipped')}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeFilter === 'shipped'
-                          ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Enviadas
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Buscar órdenes..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full sm:w-64 pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contenido de tabs */}
-            <div className="p-6">
-              {activeTab === 'orders' && (
-                <div className="space-y-4">
-                  {mockOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow bg-gray-50 dark:bg-gray-700"
-                    >
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                        <div className="flex items-start space-x-4">
-                          <img
-                            src={order.productImage}
-                            alt={order.productTitle}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-1">
-                                  {order.productTitle}
-                                </h3>
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    ID: {order.id}
-                                  </span>
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    SKU: {order.sku}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                  Cliente: {order.customerName}
-                                </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                  Documento: {order.customerDocument}
-                                </p>
-                              </div>
-                              <div className="flex space-x-2">
-                                <span
-                                  className={`px-3 py-1 text-xs font-medium rounded-full ${
-                                    order.status === 'pending'
-                                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                      : order.status === 'approved'
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                      : order.status === 'processing'
-                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                                  }`}
-                                >
-                                  {order.status === 'pending' && 'Pendiente'}
-                                  {order.status === 'approved' && 'Aprobada'}
-                                  {order.status === 'processing' && 'Procesando'}
-                                  {order.status === 'shipped' && 'Enviada'}
-                                </span>
-                                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                  order.marketplaceBadge === 'colombia'
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                    : order.marketplaceBadge === 'chile'
-                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                    : order.marketplaceBadge === 'peru'
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                                }`}>
-                                  <Globe className="w-3 h-3 mr-1" />
-                                  {order.marketplaceBadge.toUpperCase()}
-                                </span>
-                              </div>
+                
+                <div className="table-body">
+                  {filteredOrders.map((order) => {
+                    const statusBadge = getStatusBadge(order.status);
+                    const marketBadge = getMarketBadge(order.marketplaceBadge);
+                    
+                    return (
+                      <div key={order.id} className="table-row">
+                        <div className="td product-cell">
+                          <img src={order.productImage} alt={order.productTitle} className="product-image" />
+                          <div className="product-info">
+                            <div className="product-title">{order.productTitle}</div>
+                            <div className="product-meta">
+                              SKU: {order.sku} • ID: {order.id}
                             </div>
                           </div>
                         </div>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                              ${order.price.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              Comisión: ${order.commission.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                              Neto: ${order.netAmount.toLocaleString()}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                            <button
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setShowMessageModal(true);
-                                setModalTab('messages');
-                              }}
-                              className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors flex items-center"
-                            >
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              Mensajes
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setShowMessageModal(true);
-                                setModalTab('logistics');
-                              }}
-                              className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900 rounded-lg transition-colors flex items-center"
-                            >
-                              <Truck className="w-4 h-4 mr-1" />
-                              Logística
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setShowMessageModal(true);
-                                setModalTab('publication');
-                              }}
-                              className="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900 rounded-lg transition-colors flex items-center"
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Ver Publicación
-                            </button>
-                          </div>
+                        
+                        <div className="td">
+                          <div className="customer-name">{order.customerName}</div>
+                          <div className="customer-doc">{order.customerDocument}</div>
                         </div>
+                        
+                        <div className="td">
+                          <span className={`status-badge ${statusBadge.class}`}>
+                            {statusBadge.text}
+                          </span>
+                        </div>
+                        
+                        <div className="td">
+                          <span className={`market-badge ${marketBadge.class}`}>
+                            {marketBadge.text}
+                          </span>
+                        </div>
+                        
+                        <div className="td price-cell">
+                          {formatCurrency(order.price, order.marketplaceBadge)}
+                        </div>
+                        
+                        <div className="td commission-cell">
+                          {formatCurrency(order.commission, order.marketplaceBadge)}
+                        </div>
+                        
+                        <div className="td net-cell">
+                          {formatCurrency(order.netAmount, order.marketplaceBadge)}
+                        </div>
+                        
+                        <div className="td actions-cell">
+                          <button
+                            className="action-btn"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowMessageModal(true);
+                              setModalTab('messages');
+                            }}
+                            title="Ver detalles"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            className="action-btn"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowMessageModal(true);
+                              setModalTab('messages');
+                            }}
+                            title="Mensajes"
+                          >
+                            <MessageSquare size={16} />
+                          </button>
+                          <button
+                            className="action-btn"
+                            onClick={() => window.open(order.mercadoLibreLink, '_blank')}
+                            title="Ver en MercadoLibre"
+                          >
+                            <ExternalLink size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'ml-stores' && (
+            <div className="ml-stores-section">
+              <div className="section-header">
+                <h2>Tiendas MercadoLibre Conectadas</h2>
+                <button 
+                  className="primary-btn"
+                  onClick={() => setShowConnectML(true)}
+                >
+                  <Plus size={16} />
+                  Conectar Nueva Tienda
+                </button>
+              </div>
+              
+              <div className="stores-grid">
+                {mlStores.map((store) => (
+                  <div key={store.id} className="store-card">
+                    <div className="store-header">
+                      <div className="store-info">
+                        <h3>{store.nickname}</h3>
+                        <p>ID: {store.ml_user_id}</p>
+                        <p>País: {store.site_id}</p>
+                      </div>
+                      <span className={`store-status ${store.active ? 'active' : 'inactive'}`}>
+                        {store.active ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </div>
+                    <div className="store-actions">
+                      <button className="secondary-btn">
+                        <RefreshCw size={14} />
+                        Sincronizar
+                      </button>
+                      <button 
+                        className="danger-btn"
+                        onClick={() => deleteMLStore(store.id, store.nickname)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                {mlStores.length === 0 && (
+                  <div className="empty-state">
+                    <Store size={48} />
+                    <h3>No hay tiendas conectadas</h3>
+                    <p>Conecta tu primera tienda de MercadoLibre para comenzar a gestionar tus ventas</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'ml-sync' && <MLOrdersSync />}
+          {activeTab === 'dashboard' && (
+            <div className="dashboard-content">
+              <h2>Dashboard - Próximamente</h2>
+              <p>Aquí se mostrarán métricas y análisis detallados de ventas.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal de detalles de orden */}
+      {showMessageModal && selectedOrder && (
+        <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Orden {selectedOrder.id}</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowMessageModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-tabs">
+              <button
+                className={`modal-tab ${modalTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setModalTab('messages')}
+              >
+                <MessageSquare size={16} />
+                Mensajes
+              </button>
+              <button
+                className={`modal-tab ${modalTab === 'questions' ? 'active' : ''}`}
+                onClick={() => setModalTab('questions')}
+              >
+                <HelpCircle size={16} />
+                Preguntas
+              </button>
+              <button
+                className={`modal-tab ${modalTab === 'logistics' ? 'active' : ''}`}
+                onClick={() => setModalTab('logistics')}
+              >
+                <Truck size={16} />
+                Logística
+              </button>
+              <button
+                className={`modal-tab ${modalTab === 'publication' ? 'active' : ''}`}
+                onClick={() => setModalTab('publication')}
+              >
+                <FileText size={16} />
+                Publicación
+              </button>
+              <button
+                className={`modal-tab ${modalTab === 'techspecs' ? 'active' : ''}`}
+                onClick={() => setModalTab('techspecs')}
+              >
+                <Settings size={16} />
+                Especificaciones
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {modalTab === 'messages' && (
+                <div className="messages-section">
+                  <div className="messages-list">
+                    {(mockMessages[selectedOrder.id] || []).map((message) => (
+                      <div
+                        key={message.id}
+                        className={`message ${message.sender === 'seller' ? 'seller' : 'customer'}`}
+                      >
+                        <div className="message-content">{message.text}</div>
+                        <div className="message-time">{message.time} - {message.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="message-input">
+                    <input
+                      type="text"
+                      value={messageInput}
+                      onChange={(e) => setMessageInput(e.target.value)}
+                      placeholder="Escribir mensaje..."
+                    />
+                    <button className="send-btn">
+                      <Send size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {modalTab === 'questions' && (
+                <div className="questions-section">
+                  {(mockQuestions[selectedOrder.id] || []).map((question) => (
+                    <div key={question.id} className="question-card">
+                      <div className="question-text">{question.question}</div>
+                      <div className="question-answer">{question.answer}</div>
+                      <div className="question-meta">
+                        <span className={`question-status ${question.answered ? 'answered' : 'pending'}`}>
+                          {question.answered ? 'Respondida' : 'Pendiente'}
+                        </span>
+                        <span className="question-time">{question.time}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {activeTab === 'ml-stores' && (
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Tiendas MercadoLibre Conectadas
-                    </h3>
-                    <button
-                      onClick={() => setShowConnectML(true)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Conectar Tienda
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mlStores.length === 0 ? (
-                      <div className="col-span-full text-center py-12">
-                        <Store className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                          No hay tiendas conectadas
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          Conecta tu primera tienda de MercadoLibre para comenzar
-                        </p>
-                      </div>
-                    ) : (
-                      mlStores.map((store) => (
-                        <div
-                          key={store.id}
-                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                                <Store className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white">
-                                  {store.nickname}
-                                </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  ID: {store.ml_user_id}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span
-                                className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                  store.active
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                }`}
-                              >
-                                {store.active ? 'Activa' : 'Inactiva'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            <p><span className="font-medium">País:</span> {store.site_id}</p>
-                            <p><span className="font-medium">Conectada:</span> {new Date(store.created_at).toLocaleDateString()}</p>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <button
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium text-sm flex items-center"
-                            >
-                              <RefreshCw className="w-4 h-4 mr-1" />
-                              Sincronizar
-                            </button>
-                            <button
-                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-sm"
-                            >
-                              Desconectar
-                            </button>
-                          </div>
+              {modalTab === 'logistics' && (
+                <div className="logistics-section">
+                  {mockLogistics[selectedOrder.id] && (
+                    <div className="logistics-info">
+                      <div className="logistics-header">
+                        <h4>Información de Envío</h4>
+                        <div className="logistics-meta">
+                          <p><strong>Proveedor:</strong> {mockLogistics[selectedOrder.id].provider}</p>
+                          <p><strong>Guía:</strong> {mockLogistics[selectedOrder.id].tracking}</p>
+                          <p><strong>Estado:</strong> {mockLogistics[selectedOrder.id].status}</p>
                         </div>
-                      ))
-                    )}
+                      </div>
+                      <div className="logistics-timeline">
+                        {mockLogistics[selectedOrder.id].steps.map((step, index) => (
+                          <div key={index} className={`timeline-step ${step.completed ? 'completed' : 'pending'}`}>
+                            <div className="timeline-marker">
+                              {step.completed ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+                            </div>
+                            <div className="timeline-content">
+                              <div className="timeline-title">{step.status}</div>
+                              <div className="timeline-date">{step.date}</div>
+                              {step.location && (
+                                <div className="timeline-location">
+                                  <MapPin size={12} />
+                                  {step.location}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {modalTab === 'publication' && (
+                <div className="publication-section">
+                  {mockPublications[selectedOrder.id] && (
+                    <div className="publication-form">
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Nombre del Producto</label>
+                          <input
+                            type="text"
+                            value={mockPublications[selectedOrder.id].nombre}
+                            readOnly={!isEditingPublication}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Precio</label>
+                          <input
+                            type="number"
+                            value={mockPublications[selectedOrder.id].precio}
+                            readOnly={!isEditingPublication}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Tipo de Publicación</label>
+                          <input
+                            type="text"
+                            value={mockPublications[selectedOrder.id].tipoPublicacion}
+                            readOnly
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Stock</label>
+                          <input
+                            type="number"
+                            value={mockPublications[selectedOrder.id].stock}
+                            readOnly={!isEditingPublication}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Descripción</label>
+                        <textarea
+                          value={mockPublications[selectedOrder.id].descripcion}
+                          readOnly={!isEditingPublication}
+                          rows={4}
+                        />
+                      </div>
+                      <div className="form-actions">
+                        <button
+                          className="secondary-btn"
+                          onClick={() => setIsEditingPublication(!isEditingPublication)}
+                        >
+                          {isEditingPublication ? <Save size={16} /> : <Edit3 size={16} />}
+                          {isEditingPublication ? 'Guardar' : 'Editar'}
+                        </button>
+                        <a
+                          href={selectedOrder.mercadoLibreLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="primary-btn"
+                        >
+                          <ExternalLink size={16} />
+                          Ver en MercadoLibre
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {modalTab === 'techspecs' && (
+                <div className="techspecs-section">
+                  <div className="specs-grid">
+                    <div className="spec-item">
+                      <span className="spec-label">SKU:</span>
+                      <span className="spec-value">{selectedOrder.sku}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Cantidad:</span>
+                      <span className="spec-value">{selectedOrder.quantity}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Precio Amazon:</span>
+                      <span className="spec-value">${selectedOrder.amazonPrice}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Fecha Amazon:</span>
+                      <span className="spec-value">{selectedOrder.amazonDate}</span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Amazon GSS:</span>
+                      <span className={`spec-value ${selectedOrder.amazonGSS ? 'success' : 'danger'}`}>
+                        {selectedOrder.amazonGSS ? 'Sí' : 'No'}
+                      </span>
+                    </div>
+                    <div className="spec-item">
+                      <span className="spec-label">Creada:</span>
+                      <span className="spec-value">{selectedOrder.dateCreated}</span>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-        </main>
+        </div>
+      )}
 
-        {/* Modal de detalles de orden */}
-        {showMessageModal && selectedOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Orden {selectedOrder.id}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedOrder.productTitle}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowMessageModal(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
-                </button>
-              </div>
-
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setModalTab('messages')}
-                  className={`px-6 py-3 text-sm font-medium transition-colors flex items-center ${
-                    modalTab === 'messages'
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Mensajes
-                </button>
-                <button
-                  onClick={() => setModalTab('questions')}
-                  className={`px-6 py-3 text-sm font-medium transition-colors flex items-center ${
-                    modalTab === 'questions'
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4 mr-2" />
-                  Preguntas
-                </button>
-                <button
-                  onClick={() => setModalTab('logistics')}
-                  className={`px-6 py-3 text-sm font-medium transition-colors flex items-center ${
-                    modalTab === 'logistics'
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <Truck className="w-4 h-4 mr-2" />
-                  Logística
-                </button>
-                <button
-                  onClick={() => setModalTab('publication')}
-                  className={`px-6 py-3 text-sm font-medium transition-colors flex items-center ${
-                    modalTab === 'publication'
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Publicación
-                </button>
-                <button
-                  onClick={() => setModalTab('techspecs')}
-                  className={`px-6 py-3 text-sm font-medium transition-colors flex items-center ${
-                    modalTab === 'techspecs'
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Especificaciones
-                </button>
-              </div>
-
-              <div className="p-6 max-h-96 overflow-y-auto">
-                {modalTab === 'messages' && (
-                  <div className="space-y-4">
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
-                      {(mockMessages[selectedOrder.id] || []).map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${
-                            message.sender === 'seller' ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.sender === 'seller'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                            }`}
-                          >
-                            <p className="text-sm">{message.text}</p>
-                            <p className="text-xs mt-1 opacity-75">
-                              {message.time} - {message.date}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <input
-                        type="text"
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder="Escribir mensaje..."
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      />
-                      <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {modalTab === 'questions' && (
-                  <div className="space-y-4">
-                    {(mockQuestions[selectedOrder.id] || []).map((question) => (
-                      <div
-                        key={question.id}
-                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {question.question}
-                          </p>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              question.answered
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                            }`}
-                          >
-                            {question.answered ? 'Respondida' : 'Pendiente'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                          {question.answer}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {question.time}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {modalTab === 'logistics' && (
-                  <div className="space-y-6">
-                    {mockLogistics[selectedOrder.id] && (
-                      <>
-                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-4">
-                            <div>
-                              <h4 className="font-semibold text-gray-900 dark:text-white">
-                                Estado del Envío
-                              </h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Proveedor: {mockLogistics[selectedOrder.id].provider}
-                              </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Guía: {mockLogistics[selectedOrder.id].tracking}
-                              </p>
-                            </div>
-                            <span
-                              className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                mockLogistics[selectedOrder.id].status === 'Entregado'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                  : mockLogistics[selectedOrder.id].status === 'En tránsito'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                              }`}
-                            >
-                              {mockLogistics[selectedOrder.id].status}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {mockLogistics[selectedOrder.id].steps.map((step, index) => (
-                            <div key={index} className="flex items-center space-x-4">
-                              <div className={`w-4 h-4 rounded-full flex-shrink-0 ${
-                                step.completed
-                                  ? 'bg-green-500'
-                                  : 'bg-gray-300 dark:bg-gray-600'
-                              }`}>
-                                {step.completed && (
-                                  <CheckCircle className="w-4 h-4 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <p className={`font-medium ${
-                                  step.completed
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-gray-500 dark:text-gray-400'
-                                }`}>
-                                  {step.status}
-                                </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">
-                                  {step.date}
-                                </p>
-                                {step.location && (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    <MapPin className="w-3 h-3 inline mr-1" />
-                                    {step.location}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {modalTab === 'publication' && (
-                  <div className="space-y-6">
-                    {mockPublications[selectedOrder.id] && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
-                            Datos de la Publicación
-                          </h4>
-                          <button
-                            onClick={() => setIsEditingPublication(!isEditingPublication)}
-                            className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
-                          >
-                            {isEditingPublication ? (
-                              <Save className="w-4 h-4 mr-1" />
-                            ) : (
-                              <Edit3 className="w-4 h-4 mr-1" />
-                            )}
-                            {isEditingPublication ? 'Guardar' : 'Editar'}
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Nombre del Producto
-                            </label>
-                            {isEditingPublication ? (
-                              <input
-                                type="text"
-                                defaultValue={mockPublications[selectedOrder.id].nombre}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                              />
-                            ) : (
-                              <p className="text-gray-900 dark:text-white">
-                                {mockPublications[selectedOrder.id].nombre}
-                              </p>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Precio
-                            </label>
-                            {isEditingPublication ? (
-                              <input
-                                type="number"
-                                defaultValue={mockPublications[selectedOrder.id].precio}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                              />
-                            ) : (
-                              <p className="text-gray-900 dark:text-white">
-                                ${mockPublications[selectedOrder.id].precio.toLocaleString()} {mockPublications[selectedOrder.id].moneda}
-                              </p>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Tipo de Publicación
-                            </label>
-                            <p className="text-gray-900 dark:text-white">
-                              {mockPublications[selectedOrder.id].tipoPublicacion}
-                            </p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Días de Entrega
-                            </label>
-                            <p className="text-gray-900 dark:text-white">
-                              {mockPublications[selectedOrder.id].diasEntrega}
-                            </p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Categoría
-                            </label>
-                            <p className="text-gray-900 dark:text-white">
-                              {mockPublications[selectedOrder.id].categoria}
-                            </p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Stock
-                            </label>
-                            {isEditingPublication ? (
-                              <input
-                                type="number"
-                                defaultValue={mockPublications[selectedOrder.id].stock}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                              />
-                            ) : (
-                              <p className="text-gray-900 dark:text-white">
-                                {mockPublications[selectedOrder.id].stock} unidades
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Descripción
-                          </label>
-                          {isEditingPublication ? (
-                            <textarea
-                              defaultValue={mockPublications[selectedOrder.id].descripcion}
-                              rows={4}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            />
-                          ) : (
-                            <p className="text-gray-900 dark:text-white">
-                              {mockPublications[selectedOrder.id].descripcion}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <div className="flex space-x-4">
-                            <a
-                              href={selectedOrder.mercadoLibreLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
-                            >
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              Ver en MercadoLibre
-                            </a>
-                            <a
-                              href={selectedOrder.amazonLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 flex items-center"
-                            >
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              Ver en Amazon
-                            </a>
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Plantilla: {mockPublications[selectedOrder.id].plantilla}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {modalTab === 'techspecs' && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">
-                      Especificaciones Técnicas
-                    </h4>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">SKU:</span>
-                          <span className="ml-2 text-gray-900 dark:text-white">{selectedOrder.sku}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Cantidad:</span>
-                          <span className="ml-2 text-gray-900 dark:text-white">{selectedOrder.quantity}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Precio Amazon:</span>
-                          <span className="ml-2 text-gray-900 dark:text-white">${selectedOrder.amazonPrice}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Fecha Amazon:</span>
-                          <span className="ml-2 text-gray-900 dark:text-white">{selectedOrder.amazonDate}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Amazon GSS:</span>
-                          <span className={`ml-2 ${selectedOrder.amazonGSS ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {selectedOrder.amazonGSS ? 'Sí' : 'No'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700 dark:text-gray-300">Creada:</span>
-                          <span className="ml-2 text-gray-900 dark:text-white">{selectedOrder.dateCreated}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Modal de conectar ML Store */}
+      {showConnectML && (
+        <ConnectMLStore
+          onClose={() => setShowConnectML(false)}
+          onSuccess={handleMLConnectionSuccess}
+        />
+      )}
     </div>
   );
 };
