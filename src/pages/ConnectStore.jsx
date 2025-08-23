@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Store, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { SALES_API_URL } from '../config/api.js';
 
 const ConnectStore = ({ user }) => {
   const [stores, setStores] = useState([]);
@@ -13,7 +14,7 @@ const ConnectStore = ({ user }) => {
     store_name: ''
   });
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://api.dropux.co';
+  const API_URL = SALES_API_URL;
 
   const countries = [
     { code: 'MCO', name: 'Colombia', currency: 'COP', flag: '🇨🇴' },
@@ -22,11 +23,7 @@ const ConnectStore = ({ user }) => {
     { code: 'MLA', name: 'Argentina', currency: 'ARS', flag: '🇦🇷' }
   ];
 
-  useEffect(() => {
-    fetchStores();
-  }, []);
-
-  const fetchStores = async () => {
+  const fetchStores = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -49,7 +46,11 @@ const ConnectStore = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchStores();
+  }, [fetchStores]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,7 +93,7 @@ const ConnectStore = ({ user }) => {
   };
 
   const deleteStore = async (storeId) => {
-    if (!confirm('¿Estás seguro de eliminar esta tienda?')) return;
+    if (!window.confirm('¿Estás seguro de eliminar esta tienda?')) return;
     
     try {
       const token = localStorage.getItem('token');

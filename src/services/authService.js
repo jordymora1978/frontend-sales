@@ -4,10 +4,7 @@
  */
 
 import axios from 'axios';
-
-// API URLs
-const AUTH_API_URL = process.env.REACT_APP_AUTH_API_URL || 'https://auth-api.dropux.co';
-const SALES_API_URL = process.env.REACT_APP_SALES_API_URL || 'https://api-sales.dropux.co';
+import { AUTH_API_URL, SALES_API_URL } from '../config/api.js';
 
 // Token management
 const TOKEN_KEY = 'auth_token';
