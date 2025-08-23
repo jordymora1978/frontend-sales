@@ -72,7 +72,10 @@ class AuthService {
    */
   async login(email, password) {
     try {
-      const response = await axios.post(`${AUTH_API_URL}/auth/login`, {
+      // Use a separate axios instance to avoid interceptors during login
+      const loginAxios = axios.create();
+      
+      const response = await loginAxios.post(`${AUTH_API_URL}/auth/login`, {
         email,
         password
       });
@@ -85,7 +88,35 @@ class AuthService {
       }
     } catch (error) {
       console.error('Login error:', error);
-      throw new Error(error.response?.data?.detail || 'Authentication failed');
+      
+      // Better error handling
+      let errorMessage = 'Authentication failed';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        if (status === 401) {
+          errorMessage = 'Invalid email or password';
+        } else if (status === 403) {
+          errorMessage = 'Account access denied';
+        } else if (status >= 500) {
+          errorMessage = 'Server error, please try again';
+        } else if (data && typeof data === 'object') {
+          // Handle detailed error responses
+          if (data.detail) {
+            errorMessage = typeof data.detail === 'string' ? data.detail : 'Authentication failed';
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = 'Network error, please check your connection';
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 
