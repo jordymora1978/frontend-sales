@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Package, Truck, Eye, MessageSquare, ExternalLink, Sun, Moon, ShoppingCart, Users, Settings, BarChart3, X, Send, HelpCircle, MapPin, FileText, Clipboard, Edit3, Save, Store, Plus, CheckCircle, AlertCircle, Globe, RefreshCw } from 'lucide-react';
+import { User, Package, Truck, MessageSquare, ExternalLink, Sun, Moon, ShoppingCart, Users, Settings, BarChart3, X, Send, HelpCircle, MapPin, FileText, Edit3, Save, Store, Plus, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConnectMLStore from './ConnectMLStore.jsx';
 import MLOrdersSync from '../pages/MLOrdersSync';
-import OrdersCollapsible from '../pages/OrdersCollapsible';
+import OrdersPageCustom from './OrdersPageCustom';
+import './OrdersPageCustom.css';
 import apiService from '../services/api';
 
 const SalesDashboard = () => {
@@ -15,7 +16,7 @@ const SalesDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('orders');
   const [showMessageModal, setShowMessageModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder] = useState(null);
   const [modalTab, setModalTab] = useState('messages');
   const [messageInput, setMessageInput] = useState('');
   const [isEditingPublication, setIsEditingPublication] = useState(false);
@@ -183,52 +184,52 @@ const SalesDashboard = () => {
     }
   };
 
-  const stats = {
-    pending: 24,
-    processing: 18,
-    shipped: 42,
-    revenue: 2847650
-  };
+  // const stats = {
+  //   pending: 24,
+  //   processing: 18,
+  //   shipped: 42,
+  //   revenue: 2847650
+  // };
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const formatCurrency = (amount, country = 'colombia') => {
-    const formatters = {
-      colombia: new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }),
-      chile: new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }),
-      peru: new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }),
-    };
-    return formatters[country]?.format(amount) || `$${amount.toLocaleString()}`;
-  };
+  // const formatCurrency = (amount, country = 'colombia') => {
+  //   const formatters = {
+  //     colombia: new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }),
+  //     chile: new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }),
+  //     peru: new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }),
+  //   };
+  //   return formatters[country]?.format(amount) || `$${amount.toLocaleString()}`;
+  // };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      pending: { class: 'status-pending', text: 'Pendiente' },
-      approved: { class: 'status-approved', text: 'Aprobado' },
-      processing: { class: 'status-processing', text: 'Procesando' },
-      shipped: { class: 'status-shipped', text: 'Enviado' }
-    };
-    return badges[status] || badges.pending;
-  };
+  // const getStatusBadge = (status) => {
+  //   const badges = {
+  //     pending: { class: 'status-pending', text: 'Pendiente' },
+  //     approved: { class: 'status-approved', text: 'Aprobado' },
+  //     processing: { class: 'status-processing', text: 'Procesando' },
+  //     shipped: { class: 'status-shipped', text: 'Enviado' }
+  //   };
+  //   return badges[status] || badges.pending;
+  // };
 
-  const getMarketBadge = (market) => {
-    const badges = {
-      colombia: { class: 'market-colombia', text: 'Colombia' },
-      chile: { class: 'market-chile', text: 'Chile' },
-      peru: { class: 'market-peru', text: 'Perú' }
-    };
-    return badges[market] || badges.colombia;
-  };
+  // const getMarketBadge = (market) => {
+  //   const badges = {
+  //     colombia: { class: 'market-colombia', text: 'Colombia' },
+  //     chile: { class: 'market-chile', text: 'Chile' },
+  //     peru: { class: 'market-peru', text: 'Perú' }
+  //   };
+  //   return badges[market] || badges.colombia;
+  // };
 
-  const filteredOrders = mockOrders.filter(order => {
-    const matchesFilter = activeFilter === 'all' || order.status === activeFilter;
-    const matchesSearch = order.productTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  // const filteredOrders = mockOrders.filter(order => {
+  //   const matchesFilter = activeFilter === 'all' || order.status === activeFilter;
+  //   const matchesSearch = order.productTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                        order.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                        order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+  //   return matchesFilter && matchesSearch;
+  // });
 
   return (
     <div className={`app-layout ${theme}-mode`}>
@@ -385,125 +386,7 @@ const SalesDashboard = () => {
 
         {/* CONTENT AREA */}
         <div className="content-area">
-          {activeTab === 'orders' && (
-            <>
-              {/* STATS ROW */}
-              <div className="stats-row">
-                <div className="stat-card pending">
-                  <div className="stat-number">{stats.pending}</div>
-                  <div className="stat-label">Órdenes Pendientes</div>
-                </div>
-                <div className="stat-card processing">
-                  <div className="stat-number">{stats.processing}</div>
-                  <div className="stat-label">En Procesamiento</div>
-                </div>
-                <div className="stat-card shipped">
-                  <div className="stat-number">{stats.shipped}</div>
-                  <div className="stat-label">Enviadas Hoy</div>
-                </div>
-                <div className="stat-card revenue">
-                  <div className="stat-number">{formatCurrency(stats.revenue)}</div>
-                  <div className="stat-label">Ingresos del Mes</div>
-                </div>
-              </div>
-
-              {/* ORDERS TABLE */}
-              <div className="orders-table">
-                <div className="table-header">
-                  <div className="th">Producto</div>
-                  <div className="th">Cliente</div>
-                  <div className="th">Estado</div>
-                  <div className="th">Mercado</div>
-                  <div className="th">Precio</div>
-                  <div className="th">Comisión</div>
-                  <div className="th">Neto</div>
-                  <div className="th">Acciones</div>
-                </div>
-                
-                <div className="table-body">
-                  {filteredOrders.map((order) => {
-                    const statusBadge = getStatusBadge(order.status);
-                    const marketBadge = getMarketBadge(order.marketplaceBadge);
-                    
-                    return (
-                      <div key={order.id} className="table-row">
-                        <div className="td product-cell">
-                          <img src={order.productImage} alt={order.productTitle} className="product-image" />
-                          <div className="product-info">
-                            <div className="product-title">{order.productTitle}</div>
-                            <div className="product-meta">
-                              SKU: {order.sku} • ID: {order.id}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="td">
-                          <div className="customer-name">{order.customerName}</div>
-                          <div className="customer-doc">{order.customerDocument}</div>
-                        </div>
-                        
-                        <div className="td">
-                          <span className={`status-badge ${statusBadge.class}`}>
-                            {statusBadge.text}
-                          </span>
-                        </div>
-                        
-                        <div className="td">
-                          <span className={`market-badge ${marketBadge.class}`}>
-                            {marketBadge.text}
-                          </span>
-                        </div>
-                        
-                        <div className="td price-cell">
-                          {formatCurrency(order.price, order.marketplaceBadge)}
-                        </div>
-                        
-                        <div className="td commission-cell">
-                          {formatCurrency(order.commission, order.marketplaceBadge)}
-                        </div>
-                        
-                        <div className="td net-cell">
-                          {formatCurrency(order.netAmount, order.marketplaceBadge)}
-                        </div>
-                        
-                        <div className="td actions-cell">
-                          <button
-                            className="action-btn"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowMessageModal(true);
-                              setModalTab('messages');
-                            }}
-                            title="Ver detalles"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            className="action-btn"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowMessageModal(true);
-                              setModalTab('messages');
-                            }}
-                            title="Mensajes"
-                          >
-                            <MessageSquare size={16} />
-                          </button>
-                          <button
-                            className="action-btn"
-                            onClick={() => window.open(order.mercadoLibreLink, '_blank')}
-                            title="Ver en MercadoLibre"
-                          >
-                            <ExternalLink size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
+          {activeTab === 'orders' && <OrdersPageCustom />}
 
           {activeTab === 'ml-stores' && (
             <div className="ml-stores-section">
