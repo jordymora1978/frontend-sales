@@ -3,7 +3,7 @@
  * Provides global authentication state and methods
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import authService from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -29,11 +29,32 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      if (authService.isAuthenticated()) {
-        // Try to get fresh user data
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+      // Check if we have tokens in localStorage
+      const token = localStorage.getItem('auth_token');
+      const userData = localStorage.getItem('user_data');
+      
+      if (token && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          
+          // Try to get fresh user data in background
+          try {
+            const currentUser = await authService.getCurrentUser();
+            if (currentUser) {
+              setUser(currentUser);
+            }
+          } catch (apiError) {
+            console.warn('Failed to refresh user data:', apiError);
+            // Keep using cached user data
+          }
+        } catch (parseError) {
+          console.error('Failed to parse user data:', parseError);
+          setUser(null);
+          localStorage.removeItem('user_data');
+        }
       } else {
         setUser(null);
       }
@@ -99,8 +120,10 @@ export const AuthProvider = ({ children }) => {
     return authService.isAdmin();
   };
 
-  // Calculate authentication status reactively
-  const isAuthenticatedValue = authService.isAuthenticated() && !!user;
+  // Calculate authentication status based on context state
+  const isAuthenticated = useMemo(() => {
+    return !loading && !!user && !!localStorage.getItem('auth_token');
+  }, [loading, user]);
 
   const value = {
     user,
@@ -111,7 +134,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     hasPermission,
     isAdmin,
-    isAuthenticated: isAuthenticatedValue,
+    isAuthenticated,
     setError
   };
 
