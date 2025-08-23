@@ -99,9 +99,8 @@ export const AuthProvider = ({ children }) => {
     return authService.isAdmin();
   };
 
-  const isAuthenticated = () => {
-    return authService.isAuthenticated() && user;
-  };
+  // Calculate authentication status reactively
+  const isAuthenticatedValue = authService.isAuthenticated() && !!user;
 
   const value = {
     user,
@@ -112,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     hasPermission,
     isAdmin,
-    isAuthenticated: isAuthenticated(),
+    isAuthenticated: isAuthenticatedValue,
     setError
   };
 
