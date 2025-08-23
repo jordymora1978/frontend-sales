@@ -2,7 +2,6 @@
 // Centralized configuration to avoid environment variable conflicts
 
 const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
 
 // Production URLs (default)
 const PRODUCTION_CONFIG = {

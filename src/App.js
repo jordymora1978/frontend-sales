@@ -1,11 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import SalesDashboard from './components/SalesDashboard';
 import Login from './components/Login';
-import Dashboard from './pages/Dashboard';
-import MLOrders from './pages/MLOrders';
-import ConnectStore from './pages/ConnectStore';
-import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 const LoadingScreen = () => (
@@ -39,27 +36,7 @@ const AppRoutes = () => {
           <Route path="/login" element={<AuthenticatedLogin />} />
           <Route 
             path="/" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/orders" 
-            element={
-              <ProtectedRoute>
-                <MLOrders />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/connect-store" 
-            element={
-              <ProtectedRoute>
-                <ConnectStore />
-              </ProtectedRoute>
-            } 
+            element={<SalesDashboard />} 
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
