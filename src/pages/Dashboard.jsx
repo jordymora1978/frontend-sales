@@ -12,9 +12,11 @@ import {
   User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = () => {
+  const { user, logout, hasPermission, isAdmin } = useAuth();
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingOrders: 0,
@@ -24,19 +26,14 @@ const Dashboard = ({ user, onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://api.dropux.co';
-
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-      
-      // Fetch stores
-      const storesResponse = await axios.get(`${API_URL}/api/ml/my-stores`, { headers });
+      // Fetch stores using centralized auth service
+      const storesResponse = await authService.apiCall('/api/ml/my-stores');
       
       setStats({
         totalOrders: 156,
@@ -91,7 +88,7 @@ const Dashboard = ({ user, onLogout }) => {
         </nav>
         <div className="absolute bottom-0 w-full p-4 border-t">
           <button
-            onClick={onLogout}
+            onClick={logout}
             className="w-full text-left p-3 rounded-lg hover:bg-red-50 flex items-center text-red-600"
           >
             <LogOut className="h-5 w-5 mr-3" />

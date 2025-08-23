@@ -1,34 +1,24 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const API_URL = process.env.REACT_APP_API_URL || 'https://api.dropux.co';
+  const { login, loading, error, setError } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email,
-        password
-      });
-
-      if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-        onLogin(response.data.user);
+      const userData = await login(email, password);
+      if (onLogin) {
+        onLogin(userData);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión');
-    } finally {
-      setLoading(false);
+      // Error is handled by AuthContext
+      console.error('Login failed:', err);
     }
   };
 
@@ -93,7 +83,7 @@ const Login = ({ onLogin }) => {
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Credenciales de prueba:</p>
-          <p className="font-mono mt-1">admin@dropux.co / admin123</p>
+          <p className="font-mono mt-1">admin@dropux.co / Admin123!</p>
         </div>
       </div>
     </div>
