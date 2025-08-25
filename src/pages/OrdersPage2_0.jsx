@@ -37,12 +37,16 @@ import {
   Filter as FilterIcon,
   Truck,
   Package,
+  Weight,
+  CheckCircle,
+  FileText,
   MapPin,
   Star,
   ExternalLink,
   Phone,
   CreditCard,
-  Archive
+  Archive,
+  Info
 } from 'lucide-react';
 
 const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
@@ -56,6 +60,8 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState(new Set());
+  const [financeExpanded, setFinanceExpanded] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // grid or list
 
   // Estados de órdenes
@@ -72,8 +78,9 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   useEffect(() => {
     const mockOrdersData = [
       {
-        id: 'MLC-2025002',
+        id: 'MGA-PE4998',
         number: 'ORD-2025002',
+        orderNumber: '2000012784807490',
         sku: 'B07XQXZXVZ',
         productTitle: '2 Zapatillas Deportivas Running Nike Air Max Revolution 5',
         productImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop',
@@ -687,21 +694,30 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           
           const getPriorityColor = (priority) => {
             switch (priority) {
-              case 'high': return 'border-l-4 border-red-500';
-              case 'medium': return 'border-l-4 border-yellow-500';
-              case 'low': return 'border-l-4 border-green-500';
-              default: return 'border-l-4 border-blue-500';
+              case 'high': return 'border border-gray-400';
+              case 'medium': return 'border border-gray-300';
+              case 'low': return 'border border-gray-200';
+              default: return 'border border-gray-250';
             }
           };
           
           return (
             <div 
               key={order.id} 
-              className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
+              className={`bg-white rounded-lg shadow-sm p-4 md:p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
             >
               {/* Header de la tarjeta */}
               <div className={`${viewMode === 'list' ? 'flex-1' : ''} flex items-start justify-between ${viewMode === 'list' ? '' : 'mb-4'}`}>
                 <div className="flex items-start space-x-3">
+                  {/* Checkbox de selección */}
+                  <label className="flex items-center mt-1">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={selectedOrders.has(order.id)}
+                      onChange={() => handleSelectOrder(order.id)}
+                    />
+                  </label>
                   <div className="relative">
                     <img 
                       src={order.productImage} 
@@ -725,121 +741,372 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                         <Zap className="h-4 w-4 text-yellow-500" title="Amazon Prime" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 flex items-center">
-                      <Hash className="h-3 w-3 mr-1" />
-                      {order.id} • SKU: {order.sku}
-                    </p>
+                    <div className="flex items-center flex-wrap gap-2">
+                      <p className="text-xs text-gray-600 flex items-center">
+                        <Hash className="h-3 w-3 mr-1" />
+                        {order.id} Order # 
+                        <a 
+                          href={`#order/${order.orderNumber || '2000012784807490'}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer ml-1"
+                          title={`Ver orden: ${order.orderNumber || '2000012784807490'}`}
+                        >
+                          {order.orderNumber || '2000012784807490'}
+                        </a>
+                      </p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
+                        <StatusIcon className="h-3 w-3 mr-1" />
+                        {orderStatuses[order.status].label}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
-                {/* País y checkbox */}
-                <div className="flex items-center space-x-2">
-                  <div className="text-right">
-                    <div className="text-xl">{getCountryFlag(order.location.country)}</div>
-                    <div className="text-xs text-gray-500">{order.location.city}</div>
-                  </div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedOrders.has(order.id)}
-                      onChange={() => handleSelectOrder(order.id)}
-                    />
-                  </label>
+                {/* País */}
+                <div className="text-right">
+                  <div className="text-xl">{getCountryFlag(order.location.country)}</div>
+                  <div className="text-xs text-gray-500">{order.location.city}</div>
                 </div>
               </div>
 
-              {/* Estado y tiempo */}
-              <div className="flex items-center justify-between mb-4">
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
-                  {orderStatuses[order.status].label}
-                </span>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">{formatTimeAgo(order.minutesAgo)}</span>
-                  {order.tags.slice(0, 1).map((tag, index) => (
-                    <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+              {/* Tiempo y tags */}
+              <div className="flex items-center justify-end mb-2 space-x-2">
+                <Clock className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">{formatTimeAgo(order.minutesAgo)}</span>
+                {order.tags.slice(0, 1).map((tag, index) => (
+                  <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                    {tag}
+                  </span>
+                ))}
               </div>
 
               {/* Cliente con avatar y métricas */}
-              <div className="mb-4">
+              <div className="mb-2">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-xs font-bold text-white">
                       {order.customer.name.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">
-                      {order.customer.name}
-                    </p>
-                    <div className="flex items-center space-x-3 text-xs text-gray-600">
-                      <span>{order.customer.document}</span>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {order.customer.name}
+                      </p>
                       <div className="flex items-center">
-                        <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                        <span>{order.customer.rating}</span>
+                        <Star className="h-3 w-3 text-yellow-400 mr-0.5" />
+                        <span className="text-xs text-gray-600">{order.customer.rating}</span>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-2 text-xs text-gray-600">
+                      <span>{order.customer.document}</span>
+                      <span className="bg-gray-100 px-1.5 py-0.5 rounded">{order.customer.totalOrders} órdenes</span>
+                      <span>• {order.customer.industry}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  <span className="bg-gray-100 px-2 py-0.5 rounded mr-2">{order.customer.totalOrders} órdenes</span>
-                  Industria: {order.customer.industry}
                 </div>
               </div>
 
-              {/* Financial y Logistics Info */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="text-green-600" size={14} />
-                    <span className="text-xs font-medium text-green-700">Financiero</span>
+              {/* Panel Logístico arriba - Visual Tracker */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
+                <div className="flex items-center gap-1 mb-2">
+                  <Truck className="text-blue-600" size={12} />
+                  <span className="text-sm font-medium text-blue-700">Logística:</span>
+                  
+                  {/* Badges de Proveedores Logísticos */}
+                  {/* Anicam - Colombia y Perú */}
+                  {(order.location?.country === 'COLOMBIA' || order.location?.country === 'PERÚ') && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">
+                      Anicam
+                    </span>
+                  )}
+                  
+                  {/* Chilexpress - Chile */}
+                  {order.location?.country === 'CHILE' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-900">
+                      Chilexpress
+                    </span>
+                  )}
+                  
+                  {/* Fallback para otros países o datos no disponibles */}
+                  {(!order.location?.country || (order.location?.country !== 'COLOMBIA' && order.location?.country !== 'PERÚ' && order.location?.country !== 'CHILE')) && (
+                    <div className="flex gap-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">
+                        Anicam
+                      </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-900">
+                        Chilexpress
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Progress Tracker - Desktop */}
+                <div className="hidden md:block">
+                  <div className="flex items-center justify-between relative">
+                    {/* Background Line */}
+                    <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-200"></div>
+                    
+                    {/* Active Progress Line - Based on current state */}
+                    <div className="absolute top-4 left-4 h-0.5 bg-blue-500" style={{width: '33%'}}></div>
+                    
+                    {/* Status Icons and Labels */}
+                    <div className="flex flex-col items-center relative z-10">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-1">
+                        <Package className="text-white" size={14} />
+                      </div>
+                      <span className="text-xs font-medium text-blue-600">Prealertado</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center relative z-10">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-1">
+                        <svg className="text-white" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs font-medium text-blue-600">En Miami</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center relative z-10">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mb-1">
+                        <Truck className="text-gray-500" size={14} />
+                      </div>
+                      <span className="text-xs text-gray-500">En Ruta</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center relative z-10">
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mb-1">
+                        <svg className="text-gray-500" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs text-gray-500">Entregado</span>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Total:</span>
-                      <span className="font-bold">{formatCurrency(order.amount)}</span>
+                </div>
+                
+                {/* Progress Tracker - Mobile Vertical */}
+                <div className="block md:hidden">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                        <Package className="text-white" size={10} />
+                      </div>
+                      <span className="text-xs font-medium text-blue-600">Prealertado</span>
+                      <div className="flex-1 h-px bg-blue-500"></div>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Ganancia:</span>
-                      <span className="font-bold text-green-600">{formatCurrency(order.financial.profit)}</span>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                        <svg className="text-white" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs font-medium text-blue-600">En Miami</span>
+                      <div className="flex-1 h-px bg-blue-500"></div>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Margen:</span>
-                      <span className="font-bold">{order.financial.margin}%</span>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                        <Truck className="text-gray-500" size={10} />
+                      </div>
+                      <span className="text-xs text-gray-500">En Ruta</span>
+                      <div className="flex-1 h-px bg-gray-300"></div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                        <svg className="text-gray-500" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                      </div>
+                      <span className="text-xs text-gray-500">Entregado</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid inferior - Proveedor y Financiero */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                {/* Panel Proveedor - Optimizado */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1">
+                      <Package className="text-purple-600" size={12} />
+                      <span className="text-sm font-medium text-purple-700">Proveedor:</span>
+                      
+                      {/* Ícono Amazon más grande */}
+                      <svg width="18" height="18" viewBox="0 0 48 48">
+                        <path fill="#FFB300" d="M39.6,39c-4.2,3.1-10.5,5-15.6,5c-7.3,0-13.8-2.9-18.8-7.4c-0.4-0.4,0-0.8,0.4-0.6c5.4,3.1,11.5,4.9,18.3,4.9c4.6,0,10.4-1,15.1-3C39.7,37.7,40.3,38.5,39.6,39z M41.1,36.9c-0.5-0.7-3.5-0.3-4.8-0.2c-0.4,0-0.5-0.3-0.1-0.6c2.3-1.7,6.2-1.2,6.6-0.6c0.4,0.6-0.1,4.5-2.3,6.3c-0.3,0.3-0.7,0.1-0.5-0.2C40.5,40.4,41.6,37.6,41.1,36.9z"/>
+                        <path fill="#37474F" d="M36.9,29.8c-1-1.3-2-2.4-2-4.9v-8.3c0-3.5,0-6.6-2.5-9c-2-1.9-5.3-2.6-7.9-2.6C19,5,14.2,7.2,13,13.4c-0.1,0.7,0.4,1,0.8,1.1l5.1,0.6c0.5,0,0.8-0.5,0.9-1c0.4-2.1,2.1-3.1,4.1-3.1c1.1,0,3.2,0.6,3.2,3v3c-3.2,0-6.6,0-9.4,1.2c-3.3,1.4-5.6,4.3-5.6,8.6c0,5.5,3.4,8.2,7.8,8.2c3.7,0,5.9-0.9,8.8-3.8c0.9,1.4,1.3,2.2,3,3.7c0.4,0.2,0.9,0.2,1.2-0.1l0,0c1-0.9,2.9-2.6,4-3.5C37.4,30.9,37.3,30.3,36.9,29.8z M27,22.1L27,22.1c0,2-0.1,6.9-5,6.9c-3,0-3-3-3-3c0-4.5,4.2-5,8-5V22.1z"/>
+                      </svg>
+                    </div>
+                    <button
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      onClick={() => handleOrderAction('edit-provider', order.id)}
+                      title="Editar información del proveedor"
+                    >
+                      <Settings className="text-gray-600" size={12} />
+                    </button>
+                  </div>
+                  
+                  {/* IconCards v1.2 - Optimizado */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {/* SKU Card */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
+                      <div className="text-purple-500 mb-0.5 flex justify-center">
+                        <BarChart3 size={12} />
+                      </div>
+                      <a 
+                        href={`https://www.amazon.com/dp/${order.sku}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-purple-600 hover:text-purple-800 block break-all"
+                        title="Ver en Amazon"
+                      >
+                        {order.sku || 'B07XQXZXVZ'}
+                      </a>
+                    </div>
+
+                    {/* Peso Card */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
+                      <div className="text-purple-500 mb-0.5 flex justify-center">
+                        <Weight size={12} />
+                      </div>
+                      <div className="text-xs font-bold text-purple-600">
+                        {order.weightLbs || '1.1 lbs'}
+                      </div>
+                    </div>
+
+                    {/* Estado Card */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
+                      <div className="text-purple-500 mb-0.5 flex justify-center">
+                        <CheckCircle size={12} />
+                      </div>
+                      <div className="text-xs font-bold text-purple-600">
+                        Comprado
+                      </div>
+                    </div>
+
+                    {/* Orden Card */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
+                      <div className="text-purple-500 mb-0.5 flex justify-center">
+                        <FileText size={12} />
+                      </div>
+                      <a 
+                        href={`https://www.amazon.com/gp/your-account/order-details?orderID=${order.orderNumber || '113-1539294-1662622'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-purple-600 hover:text-purple-800 font-mono block"
+                        title={`Ver orden completa: ${order.orderNumber || '113-1539294-1662622'}`}
+                      >
+                        ...{(order.orderNumber || '113-1539294-1662622').slice(-5)}
+                      </a>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Truck className="text-blue-600" size={14} />
-                    <span className="text-xs font-medium text-blue-700">Logística</span>
+                {/* Panel Financiero - Optimizado */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="text-green-600" size={12} />
+                      <span className="text-sm font-medium text-green-700">Financiero</span>
+                    </div>
+                    
+                    {/* Info icon with tooltip */}
+                    <div className="relative">
+                      <button 
+                        onMouseEnter={() => setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        onClick={() => setShowTooltip(!showTooltip)}
+                        className="p-1 hover:bg-blue-100 rounded-full transition-colors"
+                      >
+                        <Info 
+                          size={12} 
+                          className="text-blue-500 hover:text-blue-600" 
+                        />
+                      </button>
+                      
+                      {/* Tooltip */}
+                      {showTooltip && (
+                        <div className="absolute right-0 top-6 z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 animate-in fade-in-0 zoom-in-95 duration-200">
+                          {/* Tooltip Arrow */}
+                          <div className="absolute -top-1 right-3 w-2 h-2 bg-white border-l border-t border-gray-200 rotate-45"></div>
+                          
+                          <div className="text-xs font-semibold text-gray-700 mb-2">Desglose Financiero</div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-600">💰 Precio producto</span>
+                              <span className="text-xs font-medium text-gray-700">{formatCurrency(150000)}</span>
+                            </div>
+                            
+                            <div className="border-l-2 border-red-200 pl-2 space-y-0.5 ml-1">
+                              <div className="flex justify-between">
+                                <span className="text-xs text-gray-500">📊 Cargos venta</span>
+                                <span className="text-xs text-red-600">-{formatCurrency(18000)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-xs text-gray-500">📦 Envío local</span>
+                                <span className="text-xs text-red-600">-{formatCurrency(5000)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-xs text-gray-500">🏛️ Impuestos</span>
+                                <span className="text-xs text-red-600">-{formatCurrency(2200)}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-gray-100 pt-0.5">
+                                <span className="text-xs font-medium text-gray-600">💸 Subtotal</span>
+                                <span className="text-xs font-medium text-gray-700">{formatCurrency(124800)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-xs text-gray-500">✈️ Cargos int.</span>
+                                <span className="text-xs text-red-600">-{formatCurrency(79000)}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-green-50 rounded-md p-1.5 mt-2 border border-green-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-semibold text-green-700">💚 Utilidad Final</span>
+                                <span className="text-xs font-bold text-green-600">{formatCurrency(45800)} (30%)</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Provider:</span>
-                      <span className="font-bold">{order.logistics.provider2}</span>
+                  
+                  {/* Utilidad principal centrada */}
+                  <div className="text-center mb-2">
+                    <div className="inline-flex flex-col items-center">
+                      <span className="text-xs text-gray-500 mb-0.5">Utilidad</span>
+                      <span className="text-2xl font-bold text-green-600">{formatCurrency(45800)}</span>
+                      <span className="text-xs text-green-500 font-medium">30% margen</span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Estado:</span>
-                      <span className="font-bold">{order.logistics.alert}</span>
+                  </div>
+                  
+                  {/* Grid de 2 valores importantes */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {/* Neto */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 mb-0.5">Neto</span>
+                        <span className="text-sm font-semibold text-gray-700">{formatCurrency(124800)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Entrega:</span>
-                      <span className="font-bold">{order.logistics.estimatedDelivery}</span>
+                    
+                    {/* Total Cargos */}
+                    <div className="bg-slate-50 rounded-md p-1.5 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 mb-0.5">Cargos</span>
+                        <span className="text-sm font-semibold text-gray-600">-{formatCurrency(79000)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Fechas */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
                     <div className="flex items-center space-x-1 text-gray-500">
@@ -862,18 +1129,68 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
               </div>
 
-              {/* Notas */}
-              {order.notes && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              {/* Panel de Mensajería Multicanal */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="text-blue-600" size={14} />
+                    <span className="text-xs font-medium text-blue-700">Mensajería</span>
+                  </div>
+                  
+                  {/* Switch de canales ML/WhatsApp */}
+                  <div className="flex bg-white rounded border overflow-hidden">
+                    <button className="px-2 py-1 text-xs bg-blue-500 text-white">
+                      📨 ML
+                    </button>
+                    <button className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">
+                      💬 WA
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Último mensaje del cliente */}
+                <div className="bg-white border border-gray-200 rounded p-2 mb-2">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="text-yellow-600 mt-0.5" size={14} />
-                    <div>
-                      <span className="text-xs font-medium text-yellow-700">Notas:</span>
-                      <p className="text-xs text-yellow-600 mt-1">{order.notes}</p>
+                    <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+                      <User className="text-gray-600" size={10} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-gray-700">Cliente</span>
+                        <span className="text-xs text-gray-500">hace 2h</span>
+                      </div>
+                      <p className="text-xs text-gray-800 line-clamp-2">
+                        Hola, ¿podrían confirmarme cuándo llegará mi pedido? Ya pasaron 3 días desde que lo comprè...
+                      </p>
                     </div>
                   </div>
                 </div>
-              )}
+                
+                {/* Campo de respuesta compacto */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Escribir respuesta..."
+                    className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                    onClick={() => handleOrderAction('expand-chat', order.id)}
+                    title="Expandir conversación"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    </svg>
+                  </button>
+                  <button
+                    className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
+                    onClick={() => handleOrderAction('send-message', order.id)}
+                    title="Enviar mensaje"
+                  >
+                    <Send className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
 
               {/* Acciones profesionales */}
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
