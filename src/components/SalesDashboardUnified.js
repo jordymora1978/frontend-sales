@@ -17,7 +17,7 @@ import ValidadorPage from '../pages/control/ValidadorPage';
 import TRMPage from '../pages/control/TRMPage';
 import ReportesPage from '../pages/control/ReportesPage';
 import GmailDrivePage from '../pages/control/GmailDrivePage';
-import OrdersCollapsible from '../pages/OrdersCollapsible';
+import SincOrdersMeli from '../pages/SincOrdersMeli';
 import GoogleAPI from '../pages/GoogleAPI';
 import './OrdersPageCustom.css';
 import apiService from '../services/api';
@@ -149,6 +149,10 @@ const SalesDashboardUnified = () => {
             onSelectOrder={(order) => setSelectedOrder(order)}
           />
         );
+      case 'orders-custom':
+        return <OrdersPageCustom />;
+      case 'orders2':
+        return <OrdersPage2 />;
       case 'orders2_0':
         return (
           <OrdersPage2_0 
@@ -194,7 +198,7 @@ const SalesDashboardUnified = () => {
       case 'control-gmail-drive':
         return <GmailDrivePage />;
       case 'ml-sync':
-        return <OrdersCollapsible />;
+        return <SincOrdersMeli />;
       case 'google-api':
         return <GoogleAPI />;
       default:

@@ -56,6 +56,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState(new Set());
+  const [viewMode, setViewMode] = useState('grid'); // grid or list
 
   // Estados de órdenes
   const orderStatuses = {
@@ -652,11 +653,35 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               Exportar ({selectedOrders.size})
             </button>
           </div>
+          
+          {/* Botones de Vista Grid/Lista */}
+          <div className="flex bg-white rounded-lg border overflow-hidden ml-3">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                viewMode === 'grid' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                viewMode === 'list' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Lista
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Grid de órdenes en tarjetas - Estructura de Cotizaciones */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Vista de órdenes - Grid o Lista */}
+      <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
         {filteredOrders.map((order) => {
           const StatusIcon = orderStatuses[order.status].icon;
           
@@ -672,10 +697,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           return (
             <div 
               key={order.id} 
-              className={`bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
+              className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
             >
               {/* Header de la tarjeta */}
-              <div className="flex items-start justify-between mb-4">
+              <div className={`${viewMode === 'list' ? 'flex-1' : ''} flex items-start justify-between ${viewMode === 'list' ? '' : 'mb-4'}`}>
                 <div className="flex items-start space-x-3">
                   <div className="relative">
                     <img 

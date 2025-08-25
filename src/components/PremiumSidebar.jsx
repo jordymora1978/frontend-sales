@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, createContext } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   ShoppingBag,
@@ -52,7 +53,9 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, setShowMobileMenu }) => {
+const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
+  const location = useLocation();
+  const activeTab = location.pathname.replace('/', '') || 'dashboard';
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState(new Set(['control']));
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -83,25 +86,26 @@ const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, set
 
 
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null },
-    { id: 'orders2', name: 'Órdenes Pro', icon: ShoppingBag, badge: '12' },
-    { id: 'orders2_0', name: 'Órdenes Pro 2.0', icon: ShoppingBag, badge: 'new' },
-    { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3' },
-    { id: 'customers', name: 'Clientes', icon: Users, badge: null },
-    { id: 'ml-stores', name: 'ML Stores', icon: Package, badge: 'new' },
-    { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: RefreshCw, badge: null },
-    { id: 'google-api', name: 'Google API', icon: Cloud, badge: 'beta' },
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
+    { id: 'orders-custom', name: 'Órdenes A (Custom)', icon: ShoppingBag, badge: 'A', path: '/orders-custom' },
+    { id: 'orders2', name: 'Órdenes C (Pro)', icon: ShoppingBag, badge: 'C', path: '/orders2' },
+    { id: 'orders2_0', name: 'Órdenes D (Pro 2.0)', icon: ShoppingBag, badge: 'D', path: '/orders2_0' },
+    { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3', path: '/quotes' },
+    { id: 'customers', name: 'Clientes', icon: Users, badge: null, path: '/customers' },
+    { id: 'ml-stores', name: 'ML Stores', icon: Package, badge: 'new', path: '/ml-stores' },
+    { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: RefreshCw, badge: null, path: '/ml-sync' },
+    { id: 'google-api', name: 'Google API', icon: Cloud, badge: 'beta', path: '/google-api' },
     {
       id: 'control',
       name: 'Control Suite',
       icon: FolderOpen,
       isGroup: true,
       items: [
-        { id: 'control-consolidador', name: 'Consolidador 2.0', icon: Archive },
-        { id: 'control-validador', name: 'Validador', icon: CheckCircle2 },
-        { id: 'control-trm', name: 'TRM Monitor', icon: DollarSign },
-        { id: 'control-reportes', name: 'Analytics', icon: TrendingUp },
-        { id: 'control-gmail-drive', name: 'Gmail Drive', icon: Mail }
+        { id: 'control-consolidador', name: 'Consolidador 2.0', icon: Archive, path: '/control-consolidador' },
+        { id: 'control-validador', name: 'Validador', icon: CheckCircle2, path: '/control-validador' },
+        { id: 'control-trm', name: 'TRM Monitor', icon: DollarSign, path: '/control-trm' },
+        { id: 'control-reportes', name: 'Analytics', icon: TrendingUp, path: '/control-reportes' },
+        { id: 'control-gmail-drive', name: 'Gmail Drive', icon: Mail, path: '/control-gmail-drive' }
       ]
     }
   ];
@@ -116,8 +120,7 @@ const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, set
     setExpandedItems(newExpanded);
   };
 
-  const handleItemClick = (itemId) => {
-    setActiveTab(itemId);
+  const handleItemClick = () => {
     if (effectiveIsMobile) {
       effectiveSetShowMobileMenu(false);
     }
@@ -218,12 +221,13 @@ const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, set
                     {expandedItems.has(item.id) && (
                       <div className="sub-items">
                         {item.items.map(subItem => (
-                          <button
+                          <Link
                             key={subItem.id}
+                            to={subItem.path}
                             className={`nav-item sub-item ${
                               activeTab === subItem.id ? 'active' : ''
                             }`}
-                            onClick={() => handleItemClick(subItem.id)}
+                            onClick={handleItemClick}
                             onMouseEnter={() => isCollapsed && setHoveredItem(subItem.id)}
                             onMouseLeave={() => isCollapsed && setHoveredItem(null)}
                           >
@@ -240,15 +244,16 @@ const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, set
                                 {subItem.name}
                               </div>
                             )}
-                          </button>
+                          </Link>
                         ))}
                       </div>
                     )}
                   </>
                 ) : (
-                  <button
+                  <Link
+                    to={item.path}
                     className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                    onClick={() => handleItemClick(item.id)}
+                    onClick={handleItemClick}
                     onMouseEnter={() => setHoveredItem(item.id)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
@@ -274,7 +279,7 @@ const PremiumSidebar = ({ activeTab, setActiveTab, isMobile, showMobileMenu, set
                         {item.name}
                       </div>
                     )}
-                  </button>
+                  </Link>
                 )}
               </div>
             ))}

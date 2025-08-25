@@ -16,7 +16,8 @@ import './PremiumHeader.css';
 const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { theme, toggleTheme } = useContext(ThemeContext) || {};
+  const themeContext = useContext(ThemeContext);
+  const { theme, toggleTheme } = themeContext || {};
 
   // Funciones de breadcrumb eliminadas - ya no se usan
 
