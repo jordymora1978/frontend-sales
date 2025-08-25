@@ -46,7 +46,9 @@ import {
   Phone,
   CreditCard,
   Archive,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
@@ -63,16 +65,89 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [financeExpanded, setFinanceExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // grid or list
+  const [orderPopup, setOrderPopup] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage] = useState(12); // 12 órdenes por página
 
-  // Estados de órdenes
+  // Estados de órdenes (Estado de Compra)
   const orderStatuses = {
     aprobado: { label: 'Aprobado', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
     procesando: { label: 'Procesando', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-    enviado: { label: 'Enviado', color: 'bg-blue-100 text-blue-800', icon: Truck },
-    entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle2 },
     cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: XCircle },
+    mediacion: { label: 'Mediación', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
     pendiente: { label: 'Pendiente', color: 'bg-gray-100 text-gray-800', icon: Clock }
   };
+
+  // Estados de envío (Estado del Envío Local)
+  const shippingStatuses = {
+    pendiente: { label: 'Pendiente', color: 'bg-slate-100 text-slate-700', icon: Clock },
+    enviado: { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck },
+    entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 }
+  };
+
+  // Función para formatear tiempo en formato corto (10M, 2H, 4D)
+  const formatTimeShort = (minutesAgo) => {
+    if (minutesAgo < 60) {
+      return `${minutesAgo}M`;
+    } else if (minutesAgo < 1440) { // menos de 24 horas
+      const hours = Math.floor(minutesAgo / 60);
+      return `${hours}H`;
+    } else {
+      const days = Math.floor(minutesAgo / 1440);
+      return `${days}D`;
+    }
+  };
+
+  // Función para obtener color según tiempo transcurrido
+  const getTimeColor = (minutesAgo) => {
+    return 'bg-blue-500'; // Azul del sistema
+  };
+
+  // Función para obtener colores de fondo de tarjeta según estado
+  const getStatusCardColors = (status) => {
+    const statusColors = {
+      aprobado: { bg: 'bg-green-50', iconColor: 'text-green-600', textColor: 'text-green-700' },
+      procesando: { bg: 'bg-yellow-50', iconColor: 'text-yellow-600', textColor: 'text-yellow-700' },
+      enviado: { bg: 'bg-blue-50', iconColor: 'text-blue-600', textColor: 'text-blue-700' },
+      entregado: { bg: 'bg-emerald-50', iconColor: 'text-emerald-600', textColor: 'text-emerald-700' },
+      cancelado: { bg: 'bg-red-50', iconColor: 'text-red-600', textColor: 'text-red-700' },
+      pendiente: { bg: 'bg-gray-50', iconColor: 'text-gray-600', textColor: 'text-gray-700' }
+    };
+    return statusColors[status] || statusColors.pendiente;
+  };
+
+  // Funciones para manejar el popup de información de orden
+  const handleOrderInfoClick = (order, event) => {
+    if (orderPopup === order.id) {
+      setOrderPopup(null);
+    } else {
+      setOrderPopup(order.id);
+      setMousePosition({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  const handleMouseMove = (event) => {
+    if (orderPopup) {
+      setMousePosition({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  const handleClickOutside = () => {
+    setOrderPopup(null);
+  };
+
+  // Efecto para agregar listener de mouse global
+  useEffect(() => {
+    if (orderPopup) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [orderPopup]);
 
   // Enhanced mock data con estructura de órdenes
   useEffect(() => {
@@ -82,7 +157,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         number: 'ORD-2025002',
         orderNumber: '2000012784807490',
         sku: 'B07XQXZXVZ',
-        productTitle: '2 Zapatillas Deportivas Running Nike Air Max Revolution 5',
+        productTitle: 'Zapatillas Nike Air Max Revolution 5 Para Hombre Running...',
         productImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop',
         customer: {
           name: 'Carlos Mendoza',
@@ -99,6 +174,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         amount: 129990,
         currency: 'COP',
         status: 'aprobado',
+        shippingStatus: 'enviado',
         createdDate: '2025-01-14',
         lastActivity: '2025-01-22',
         validUntil: '2025-02-14',
@@ -155,7 +231,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         id: 'MPE-2025003',
         number: 'ORD-2025003',
         sku: 'B089MXZ790',
-        productTitle: 'Cámara Fotográfica Digital Canon EOS Rebel T100 Kit Completo',
+        productTitle: 'Cámara Canon EOS Rebel T100 Digital SLR Kit Completo Lente...',
         productImage: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&h=100&fit=crop',
         customer: {
           name: 'Ana Rodriguez',
@@ -172,6 +248,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         amount: 1850000,
         currency: 'COP',
         status: 'procesando',
+        shippingStatus: 'pendiente',
         createdDate: '2025-01-13',
         lastActivity: '2025-01-23',
         validUntil: '2025-02-13',
@@ -228,7 +305,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         id: 'MCO-2025004',
         number: 'ORD-2025004',
         sku: 'B0527GQ043',
-        productTitle: 'Smart Watch Deportivo con Monitor de Frecuencia Cardiaca',
+        productTitle: 'Reloj Inteligente Deportivo Monitor Cardiaco Bluetooth GPS...',
         productImage: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop',
         customer: {
           name: 'Luis Perez',
@@ -244,7 +321,8 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         },
         amount: 950000,
         currency: 'COP',
-        status: 'entregado',
+        status: 'cancelado',
+        shippingStatus: 'pendiente',
         createdDate: '2025-01-12',
         lastActivity: '2025-01-19',
         validUntil: '2025-02-12',
@@ -297,6 +375,1150 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           { date: '2025-01-13', action: 'Pago confirmado', user: 'Sistema' },
           { date: '2025-01-19', action: 'Entregado exitosamente', user: 'CourierBot' }
         ]
+      },
+      {
+        id: 'MLA-2025005',
+        number: 'ORD-2025005',
+        sku: 'B08XYZ123',
+        productTitle: 'Apple iPhone 15 Pro 128GB Natural Titanium Libre Garantía...',
+        productImage: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Sofia Martinez',
+          email: 'sofia.martinez@email.com',
+          phone: '+54 11 2345 6789',
+          document: 'DNI 35.678.901',
+          rating: 4.8,
+          totalOrders: 12,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Diseño Gráfico',
+          conversionRate: 88,
+          avgResponseTime: 2.1
+        },
+        amount: 1499000,
+        currency: 'ARS',
+        status: 'aprobado',
+        shippingStatus: 'enviado',
+        createdDate: '2025-01-20',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-20',
+        items: 1,
+        minutesAgo: 45,
+        orderStatus: { main: 'APROBADO', shipping: 'ENVIADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: 'ME456789123',
+          alert: 'EN_TRANSITO',
+          estimatedDelivery: '2025-01-25',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-20',
+          time: '10:30',
+          price: 999.99,
+          currency: 'USD',
+          paymentMethod: 'MercadoPago'
+        },
+        amazon: { available: true, stock: 8, prime: true },
+        financial: { total: 1499000, commission: 224850, net: 1274150, profit: 350000, margin: 23 },
+        location: { country: 'ARGENTINA', city: 'Buenos Aires', region: 'Capital Federal' },
+        priority: 'high',
+        notes: 'Cliente Premium - Entrega express solicitada',
+        tags: ['Premium', 'Express', 'iPhone'],
+        salesRep: 'Carlos Rodriguez',
+        probability: 95
+      },
+      {
+        id: 'MLC-2025006',
+        number: 'ORD-2025006',
+        sku: 'B09ABC456',
+        productTitle: 'Samsung Galaxy S24 Ultra 512GB Phantom Black 5G Liberado...',
+        productImage: 'https://images.unsplash.com/photo-1610792516286-524726503fb2?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Diego Fernandez',
+          email: 'diego.fernandez@email.com',
+          phone: '+56 9 8765 4321',
+          document: 'RUT 18.123.456-7',
+          rating: 4.2,
+          totalOrders: 6,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Marketing',
+          conversionRate: 75,
+          avgResponseTime: 3.2
+        },
+        amount: 1850000,
+        currency: 'CLP',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-21',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-21',
+        items: 1,
+        minutesAgo: 120,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: null,
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-28',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-21',
+          time: '14:15',
+          price: 1249.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 15, prime: false },
+        financial: { total: 1850000, commission: 277500, net: 1572500, profit: 420000, margin: 23 },
+        location: { country: 'CHILE', city: 'Santiago', region: 'Metropolitana' },
+        priority: 'medium',
+        notes: 'Cliente nuevo - Verificar datos de entrega',
+        tags: ['Nuevo', 'Samsung', 'Ultra'],
+        salesRep: 'Ana Lopez',
+        probability: 80
+      },
+      {
+        id: 'MCO-2025007',
+        number: 'ORD-2025007',
+        sku: 'B07DEF789',
+        productTitle: 'MacBook Air M2 13" 256GB Space Gray Chip Apple Silicon...',
+        productImage: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Valentina Castro',
+          email: 'valentina.castro@email.com',
+          phone: '+57 301 234 5678',
+          document: 'CC 52.345.678-9',
+          rating: 5.0,
+          totalOrders: 18,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Arquitectura',
+          conversionRate: 92,
+          avgResponseTime: 1.5
+        },
+        amount: 4200000,
+        currency: 'COP',
+        status: 'aprobado',
+        shippingStatus: 'entregado',
+        createdDate: '2025-01-18',
+        lastActivity: '2025-01-22',
+        validUntil: '2025-02-18',
+        items: 1,
+        minutesAgo: 1440,
+        orderStatus: { main: 'ENTREGADO', shipping: 'ENTREGADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'COORDINADORA',
+          trackingNumber: 'COO987654321',
+          alert: 'COMPLETADO',
+          estimatedDelivery: '2025-01-22',
+          deliveredDate: '2025-01-22'
+        },
+        purchase: {
+          date: '2025-01-18',
+          time: '09:20',
+          price: 1299.99,
+          currency: 'USD',
+          paymentMethod: 'Bank Transfer'
+        },
+        amazon: { available: true, stock: 5, prime: true },
+        financial: { total: 4200000, commission: 630000, net: 3570000, profit: 850000, margin: 20 },
+        location: { country: 'COLOMBIA', city: 'Medellín', region: 'Antioquia' },
+        priority: 'high',
+        notes: 'Entrega exitosa - Cliente VIP muy satisfecho',
+        tags: ['VIP', 'MacBook', 'Completado'],
+        salesRep: 'Miguel Santos',
+        probability: 100
+      },
+      {
+        id: 'MPE-2025008',
+        number: 'ORD-2025008',
+        sku: 'B08GHI012',
+        productTitle: 'Sony WH-1000XM5 Audífonos Inalámbricos Noise Cancelling...',
+        productImage: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Roberto Silva',
+          email: 'roberto.silva@email.com',
+          phone: '+51 987 123 456',
+          document: 'DNI 78.901.234',
+          rating: 3.8,
+          totalOrders: 4,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Música',
+          conversionRate: 65,
+          avgResponseTime: 4.1
+        },
+        amount: 850000,
+        currency: 'PEN',
+        status: 'cancelado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-19',
+        lastActivity: '2025-01-22',
+        validUntil: '2025-02-19',
+        items: 1,
+        minutesAgo: 720,
+        orderStatus: { main: 'CANCELADO', shipping: 'PENDIENTE', payment: 'CANCELADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'SERPOST',
+          trackingNumber: null,
+          alert: 'CANCELADO',
+          estimatedDelivery: null,
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-19',
+          time: '16:40',
+          price: 349.99,
+          currency: 'USD',
+          paymentMethod: 'PayPal'
+        },
+        amazon: { available: true, stock: 20, prime: true },
+        financial: { total: 850000, commission: 0, net: 0, profit: 0, margin: 0 },
+        location: { country: 'PERU', city: 'Lima', region: 'Lima' },
+        priority: 'low',
+        notes: 'Cancelado por cliente - Problemas de pago',
+        tags: ['Cancelado', 'Sony', 'Audio'],
+        salesRep: 'Laura Mendez',
+        probability: 0
+      },
+      {
+        id: 'MLA-2025009',
+        number: 'ORD-2025009',
+        sku: 'B09JKL345',
+        productTitle: 'Nintendo Switch OLED Modelo Blanco 64GB Consola Portátil...',
+        productImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Camila Rojas',
+          email: 'camila.rojas@email.com',
+          phone: '+54 11 3456 7890',
+          document: 'DNI 29.456.789',
+          rating: 4.6,
+          totalOrders: 15,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Gaming',
+          conversionRate: 85,
+          avgResponseTime: 2.8
+        },
+        amount: 750000,
+        currency: 'ARS',
+        status: 'aprobado',
+        shippingStatus: 'enviado',
+        createdDate: '2025-01-22',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-22',
+        items: 1,
+        minutesAgo: 30,
+        orderStatus: { main: 'APROBADO', shipping: 'ENVIADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: 'ME789456123',
+          alert: 'EN_TRANSITO',
+          estimatedDelivery: '2025-01-24',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-22',
+          time: '11:55',
+          price: 349.99,
+          currency: 'USD',
+          paymentMethod: 'MercadoPago'
+        },
+        amazon: { available: true, stock: 12, prime: false },
+        financial: { total: 750000, commission: 112500, net: 637500, profit: 180000, margin: 24 },
+        location: { country: 'ARGENTINA', city: 'Córdoba', region: 'Córdoba' },
+        priority: 'medium',
+        notes: 'Regalo de cumpleaños - Empaque especial',
+        tags: ['Regalo', 'Nintendo', 'Gaming'],
+        salesRep: 'Pedro Garcia',
+        probability: 90
+      },
+      {
+        id: 'MLC-2025010',
+        number: 'ORD-2025010',
+        sku: 'B07MNO678',
+        productTitle: 'iPad Pro 11" M2 128GB Wi-Fi Space Gray Apple Pencil...',
+        productImage: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Andrés Morales',
+          email: 'andres.morales@email.com',
+          phone: '+56 9 7654 3210',
+          document: 'RUT 15.789.012-3',
+          rating: 4.9,
+          totalOrders: 22,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Educación',
+          conversionRate: 95,
+          avgResponseTime: 1.3
+        },
+        amount: 2100000,
+        currency: 'CLP',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 2,
+        minutesAgo: 90,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: null,
+          alert: 'DOCUMENTOS',
+          estimatedDelivery: '2025-01-30',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '08:45',
+          price: 899.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 7, prime: true },
+        financial: { total: 2100000, commission: 315000, net: 1785000, profit: 450000, margin: 21 },
+        location: { country: 'CHILE', city: 'Valparaíso', region: 'Valparaíso' },
+        priority: 'high',
+        notes: 'Cliente educador - Descuento aplicado',
+        tags: ['Educación', 'iPad', 'Descuento'],
+        salesRep: 'Maria Elena',
+        probability: 88
+      },
+      {
+        id: 'MCO-2025011',
+        number: 'ORD-2025011',
+        sku: 'B08PQR901',
+        productTitle: 'Xiaomi Redmi Note 13 Pro 256GB Midnight Black Dual SIM...',
+        productImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Isabella Torres',
+          email: 'isabella.torres@email.com',
+          phone: '+57 302 345 6789',
+          document: 'CC 43.567.890-1',
+          rating: 4.1,
+          totalOrders: 9,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Fotografía',
+          conversionRate: 78,
+          avgResponseTime: 2.9
+        },
+        amount: 1200000,
+        currency: 'COP',
+        status: 'aprobado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 15,
+        orderStatus: { main: 'APROBADO', shipping: 'PENDIENTE', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'COORDINADORA',
+          trackingNumber: 'COO654321987',
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-26',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '15:20',
+          price: 299.99,
+          currency: 'USD',
+          paymentMethod: 'Nequi'
+        },
+        amazon: { available: true, stock: 18, prime: false },
+        financial: { total: 1200000, commission: 180000, net: 1020000, profit: 250000, margin: 21 },
+        location: { country: 'COLOMBIA', city: 'Cali', region: 'Valle del Cauca' },
+        priority: 'medium',
+        notes: 'Recién aprobado - Preparar envío',
+        tags: ['Nuevo', 'Xiaomi', 'Fotografía'],
+        salesRep: 'Carlos Rodriguez',
+        probability: 85
+      },
+      {
+        id: 'MPE-2025012',
+        number: 'ORD-2025012',
+        sku: 'B09STU234',
+        productTitle: 'Bose QuietComfort 45 Headphones Noise Cancelling Wireless...',
+        productImage: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Francisco Vega',
+          email: 'francisco.vega@email.com',
+          phone: '+51 987 654 321',
+          document: 'DNI 65.432.109',
+          rating: 4.7,
+          totalOrders: 11,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Producción Musical',
+          conversionRate: 89,
+          avgResponseTime: 2.2
+        },
+        amount: 950000,
+        currency: 'PEN',
+        status: 'aprobado',
+        shippingStatus: 'enviado',
+        createdDate: '2025-01-20',
+        lastActivity: '2025-01-22',
+        validUntil: '2025-02-20',
+        items: 1,
+        minutesAgo: 360,
+        orderStatus: { main: 'APROBADO', shipping: 'ENVIADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'SERPOST',
+          trackingNumber: 'SP123456789',
+          alert: 'EN_TRANSITO',
+          estimatedDelivery: '2025-01-24',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-20',
+          time: '13:30',
+          price: 329.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 9, prime: true },
+        financial: { total: 950000, commission: 142500, net: 807500, profit: 220000, margin: 23 },
+        location: { country: 'PERU', city: 'Arequipa', region: 'Arequipa' },
+        priority: 'medium',
+        notes: 'Cliente profesional de audio',
+        tags: ['Audio', 'Profesional', 'Bose'],
+        salesRep: 'Ana Lopez',
+        probability: 92
+      },
+      {
+        id: 'MLA-2025013',
+        number: 'ORD-2025013',
+        sku: 'B07VWX567',
+        productTitle: 'Samsung 55" QLED 4K Smart TV QN55Q70A HDR Quantum Dot...',
+        productImage: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Gabriela Herrera',
+          email: 'gabriela.herrera@email.com',
+          phone: '+54 11 4567 8901',
+          document: 'DNI 31.234.567',
+          rating: 4.4,
+          totalOrders: 7,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Entretenimiento',
+          conversionRate: 82,
+          avgResponseTime: 3.1
+        },
+        amount: 1850000,
+        currency: 'ARS',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-22',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-22',
+        items: 1,
+        minutesAgo: 240,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: null,
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-28',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-22',
+          time: '19:45',
+          price: 799.99,
+          currency: 'USD',
+          paymentMethod: 'Bank Transfer'
+        },
+        amazon: { available: true, stock: 3, prime: false },
+        financial: { total: 1850000, commission: 277500, net: 1572500, profit: 380000, margin: 21 },
+        location: { country: 'ARGENTINA', city: 'Rosario', region: 'Santa Fe' },
+        priority: 'low',
+        notes: 'TV grande - Coordinar entrega especial',
+        tags: ['TV', 'Samsung', 'QLED'],
+        salesRep: 'Pedro Garcia',
+        probability: 75
+      },
+      {
+        id: 'MLC-2025014',
+        number: 'ORD-2025014',
+        sku: 'B08YZA890',
+        productTitle: 'Apple Watch Series 9 GPS 45mm Midnight Aluminum Case...',
+        productImage: 'https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Joaquín Mendoza',
+          email: 'joaquin.mendoza@email.com',
+          phone: '+56 9 8901 2345',
+          document: 'RUT 12.345.678-9',
+          rating: 5.0,
+          totalOrders: 28,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Deportes',
+          conversionRate: 96,
+          avgResponseTime: 1.1
+        },
+        amount: 850000,
+        currency: 'CLP',
+        status: 'aprobado',
+        shippingStatus: 'entregado',
+        createdDate: '2025-01-17',
+        lastActivity: '2025-01-21',
+        validUntil: '2025-02-17',
+        items: 1,
+        minutesAgo: 2880,
+        orderStatus: { main: 'ENTREGADO', shipping: 'ENTREGADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: 'CHX987654321',
+          alert: 'COMPLETADO',
+          estimatedDelivery: '2025-01-21',
+          deliveredDate: '2025-01-21'
+        },
+        purchase: {
+          date: '2025-01-17',
+          time: '07:15',
+          price: 399.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 14, prime: true },
+        financial: { total: 850000, commission: 127500, net: 722500, profit: 195000, margin: 23 },
+        location: { country: 'CHILE', city: 'Concepción', region: 'Biobío' },
+        priority: 'high',
+        notes: 'Cliente VIP - Entrega perfecta como siempre',
+        tags: ['VIP', 'Apple Watch', 'Deportes'],
+        salesRep: 'Maria Elena',
+        probability: 100
+      },
+      {
+        id: 'MCO-2025015',
+        number: 'ORD-2025015',
+        sku: 'B09BCD123',
+        productTitle: 'Lenovo ThinkPad E15 Intel i7 16GB RAM 512GB SSD Windows...',
+        productImage: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Natalia Campos',
+          email: 'natalia.campos@email.com',
+          phone: '+57 303 456 7890',
+          document: 'CC 87.654.321-0',
+          rating: 4.3,
+          totalOrders: 5,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Ingeniería',
+          conversionRate: 73,
+          avgResponseTime: 3.8
+        },
+        amount: 2800000,
+        currency: 'COP',
+        status: 'cancelado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-21',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-21',
+        items: 1,
+        minutesAgo: 480,
+        orderStatus: { main: 'CANCELADO', shipping: 'PENDIENTE', payment: 'CANCELADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'COORDINADORA',
+          trackingNumber: null,
+          alert: 'CANCELADO',
+          estimatedDelivery: null,
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-21',
+          time: '12:00',
+          price: 899.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 6, prime: false },
+        financial: { total: 2800000, commission: 0, net: 0, profit: 0, margin: 0 },
+        location: { country: 'COLOMBIA', city: 'Barranquilla', region: 'Atlántico' },
+        priority: 'medium',
+        notes: 'Cancelado - Cliente encontró mejor precio',
+        tags: ['Cancelado', 'Lenovo', 'Laptop'],
+        salesRep: 'Miguel Santos',
+        probability: 0
+      },
+      {
+        id: 'MPE-2025016',
+        number: 'ORD-2025016',
+        sku: 'B07EFG456',
+        productTitle: 'GoPro HERO12 Black Cámara de Acción 5.3K Ultra HD...',
+        productImage: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Ricardo Espinoza',
+          email: 'ricardo.espinoza@email.com',
+          phone: '+51 987 321 654',
+          document: 'DNI 87.321.654',
+          rating: 4.6,
+          totalOrders: 13,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Turismo Aventura',
+          conversionRate: 86,
+          avgResponseTime: 2.4
+        },
+        amount: 1650000,
+        currency: 'PEN',
+        status: 'aprobado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 75,
+        orderStatus: { main: 'APROBADO', shipping: 'PENDIENTE', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'SERPOST',
+          trackingNumber: 'SP987321654',
+          alert: 'DOCUMENTOS',
+          estimatedDelivery: '2025-01-27',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '14:05',
+          price: 499.99,
+          currency: 'USD',
+          paymentMethod: 'PayPal'
+        },
+        amazon: { available: true, stock: 11, prime: true },
+        financial: { total: 1650000, commission: 247500, net: 1402500, profit: 350000, margin: 21 },
+        location: { country: 'PERU', city: 'Cusco', region: 'Cusco' },
+        priority: 'high',
+        notes: 'Para expedición al Machu Picchu',
+        tags: ['Aventura', 'GoPro', 'Turismo'],
+        salesRep: 'Laura Mendez',
+        probability: 90
+      },
+      {
+        id: 'MLA-2025017',
+        number: 'ORD-2025017',
+        sku: 'B08HIJ789',
+        productTitle: 'Dyson V15 Detect Aspiradora Inalámbrica Láser Technology...',
+        productImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Lucia Ramirez',
+          email: 'lucia.ramirez@email.com',
+          phone: '+54 11 5678 9012',
+          document: 'DNI 26.789.012',
+          rating: 4.8,
+          totalOrders: 19,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Hogar',
+          conversionRate: 91,
+          avgResponseTime: 1.9
+        },
+        amount: 1450000,
+        currency: 'ARS',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 180,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: null,
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-29',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '10:15',
+          price: 699.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 4, prime: true },
+        financial: { total: 1450000, commission: 217500, net: 1232500, profit: 320000, margin: 22 },
+        location: { country: 'ARGENTINA', city: 'La Plata', region: 'Buenos Aires' },
+        priority: 'medium',
+        notes: 'Producto premium para el hogar',
+        tags: ['Hogar', 'Dyson', 'Premium'],
+        salesRep: 'Pedro Garcia',
+        probability: 83
+      },
+      {
+        id: 'MLC-2025018',
+        number: 'ORD-2025018',
+        sku: 'B09KLM012',
+        productTitle: 'DJI Mini 4 Pro Drone 4K HDR Video Obstacle Avoidance...',
+        productImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Esteban Soto',
+          email: 'esteban.soto@email.com',
+          phone: '+56 9 9012 3456',
+          document: 'RUT 19.012.345-6',
+          rating: 4.2,
+          totalOrders: 8,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Producción Audiovisual',
+          conversionRate: 79,
+          avgResponseTime: 2.7
+        },
+        amount: 2200000,
+        currency: 'CLP',
+        status: 'aprobado',
+        shippingStatus: 'enviado',
+        createdDate: '2025-01-21',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-21',
+        items: 1,
+        minutesAgo: 300,
+        orderStatus: { main: 'APROBADO', shipping: 'ENVIADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: 'CHX321654987',
+          alert: 'EN_TRANSITO',
+          estimatedDelivery: '2025-01-25',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-21',
+          time: '16:30',
+          price: 1199.99,
+          currency: 'USD',
+          paymentMethod: 'Bank Transfer'
+        },
+        amazon: { available: true, stock: 2, prime: false },
+        financial: { total: 2200000, commission: 330000, net: 1870000, profit: 480000, margin: 22 },
+        location: { country: 'CHILE', city: 'La Serena', region: 'Coquimbo' },
+        priority: 'high',
+        notes: 'Drone profesional - Manejar con cuidado',
+        tags: ['Profesional', 'DJI', 'Drone'],
+        salesRep: 'Carlos Rodriguez',
+        probability: 88
+      },
+      {
+        id: 'MCO-2025019',
+        number: 'ORD-2025019',
+        sku: 'B07NOP345',
+        productTitle: 'Fitbit Charge 6 Fitness Tracker GPS Built-in Heart Rate...',
+        productImage: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Alejandra Cruz',
+          email: 'alejandra.cruz@email.com',
+          phone: '+57 304 567 8901',
+          document: 'CC 76.543.210-9',
+          rating: 4.9,
+          totalOrders: 16,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Fitness',
+          conversionRate: 93,
+          avgResponseTime: 1.4
+        },
+        amount: 650000,
+        currency: 'COP',
+        status: 'aprobado',
+        shippingStatus: 'entregado',
+        createdDate: '2025-01-19',
+        lastActivity: '2025-01-22',
+        validUntil: '2025-02-19',
+        items: 1,
+        minutesAgo: 1320,
+        orderStatus: { main: 'ENTREGADO', shipping: 'ENTREGADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'COORDINADORA',
+          trackingNumber: 'COO456789123',
+          alert: 'COMPLETADO',
+          estimatedDelivery: '2025-01-22',
+          deliveredDate: '2025-01-22'
+        },
+        purchase: {
+          date: '2025-01-19',
+          time: '09:40',
+          price: 199.99,
+          currency: 'USD',
+          paymentMethod: 'Daviplata'
+        },
+        amazon: { available: true, stock: 16, prime: true },
+        financial: { total: 650000, commission: 97500, net: 552500, profit: 145000, margin: 22 },
+        location: { country: 'COLOMBIA', city: 'Bucaramanga', region: 'Santander' },
+        priority: 'medium',
+        notes: 'Cliente fitness muy satisfecha',
+        tags: ['Fitness', 'Fitbit', 'Completado'],
+        salesRep: 'Ana Lopez',
+        probability: 100
+      },
+      {
+        id: 'MPE-2025020',
+        number: 'ORD-2025020',
+        sku: 'B08QRS678',
+        productTitle: 'Kindle Paperwhite 11va Generación 8GB Waterproof E-reader...',
+        productImage: 'https://images.unsplash.com/photo-1592498741405-dee-caa5-6a1e-77a8?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Mateo Paredes',
+          email: 'mateo.paredes@email.com',
+          phone: '+51 987 876 543',
+          document: 'DNI 54.321.098',
+          rating: 4.5,
+          totalOrders: 14,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Literatura',
+          conversionRate: 87,
+          avgResponseTime: 2.0
+        },
+        amount: 420000,
+        currency: 'PEN',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 60,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'SERPOST',
+          trackingNumber: null,
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-26',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '14:40',
+          price: 139.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 22, prime: true },
+        financial: { total: 420000, commission: 63000, net: 357000, profit: 95000, margin: 23 },
+        location: { country: 'PERU', city: 'Trujillo', region: 'La Libertad' },
+        priority: 'low',
+        notes: 'Para leer durante viajes',
+        tags: ['Lectura', 'Kindle', 'Amazon'],
+        salesRep: 'Laura Mendez',
+        probability: 80
+      },
+      {
+        id: 'MLA-2025021',
+        number: 'ORD-2025021',
+        sku: 'B09TUV901',
+        productTitle: 'Meta Quest 3 VR Headset 128GB All-in-One Virtual Reality...',
+        productImage: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Valeria Gutierrez',
+          email: 'valeria.gutierrez@email.com',
+          phone: '+54 11 6789 0123',
+          document: 'DNI 32.456.789',
+          rating: 4.0,
+          totalOrders: 3,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Gaming',
+          conversionRate: 68,
+          avgResponseTime: 4.2
+        },
+        amount: 1380000,
+        currency: 'ARS',
+        status: 'cancelado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-22',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-22',
+        items: 1,
+        minutesAgo: 420,
+        orderStatus: { main: 'CANCELADO', shipping: 'PENDIENTE', payment: 'CANCELADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: null,
+          alert: 'CANCELADO',
+          estimatedDelivery: null,
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-22',
+          time: '20:15',
+          price: 599.99,
+          currency: 'USD',
+          paymentMethod: 'MercadoPago'
+        },
+        amazon: { available: true, stock: 1, prime: false },
+        financial: { total: 1380000, commission: 0, net: 0, profit: 0, margin: 0 },
+        location: { country: 'ARGENTINA', city: 'Mendoza', region: 'Mendoza' },
+        priority: 'low',
+        notes: 'Cancelado - Producto muy caro',
+        tags: ['Cancelado', 'VR', 'Meta Quest'],
+        salesRep: 'Pedro Garcia',
+        probability: 0
+      },
+      {
+        id: 'MLC-2025022',
+        number: 'ORD-2025022',
+        sku: 'B07WXY234',
+        productTitle: 'Canon EOS R6 Mark II Mirrorless Camera Body 24.2MP Full...',
+        productImage: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Sebastián Lagos',
+          email: 'sebastian.lagos@email.com',
+          phone: '+56 9 0123 4567',
+          document: 'RUT 14.567.890-1',
+          rating: 4.7,
+          totalOrders: 21,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Fotografía Profesional',
+          conversionRate: 94,
+          avgResponseTime: 1.6
+        },
+        amount: 4800000,
+        currency: 'CLP',
+        status: 'aprobado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 25,
+        orderStatus: { main: 'APROBADO', shipping: 'PENDIENTE', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: 'CHX654987321',
+          alert: 'DOCUMENTOS',
+          estimatedDelivery: '2025-01-28',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '15:35',
+          price: 2499.99,
+          currency: 'USD',
+          paymentMethod: 'Bank Transfer'
+        },
+        amazon: { available: true, stock: 1, prime: false },
+        financial: { total: 4800000, commission: 720000, net: 4080000, profit: 950000, margin: 20 },
+        location: { country: 'CHILE', city: 'Puerto Montt', region: 'Los Lagos' },
+        priority: 'high',
+        notes: 'Equipo profesional - Manejar con extremo cuidado',
+        tags: ['Profesional', 'Canon', 'Fotografía'],
+        salesRep: 'Maria Elena',
+        probability: 95
+      },
+      {
+        id: 'MCO-2025023',
+        number: 'ORD-2025023',
+        sku: 'B08ZAB567',
+        productTitle: 'Microsoft Surface Pro 9 13" Touch Intel i7 16GB 512GB...',
+        productImage: 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Carmen Delgado',
+          email: 'carmen.delgado@email.com',
+          phone: '+57 305 678 9012',
+          document: 'CC 65.432.109-8',
+          rating: 4.4,
+          totalOrders: 10,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Diseño Digital',
+          conversionRate: 81,
+          avgResponseTime: 2.8
+        },
+        amount: 3200000,
+        currency: 'COP',
+        status: 'procesando',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 150,
+        orderStatus: { main: 'PROCESANDO', shipping: 'PENDIENTE', payment: 'PENDIENTE' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'COORDINADORA',
+          trackingNumber: null,
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-30',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '12:30',
+          price: 1299.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 3, prime: true },
+        financial: { total: 3200000, commission: 480000, net: 2720000, profit: 650000, margin: 20 },
+        location: { country: 'COLOMBIA', city: 'Cartagena', region: 'Bolívar' },
+        priority: 'medium',
+        notes: 'Para diseño profesional - Verificar specs',
+        tags: ['Diseño', 'Microsoft', 'Surface'],
+        salesRep: 'Miguel Santos',
+        probability: 82
+      },
+      {
+        id: 'MPE-2025024',
+        number: 'ORD-2025024',
+        sku: 'B09CDE890',
+        productTitle: 'Beats Studio Buds True Wireless Earbuds Active Noise...',
+        productImage: 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Rodrigo Flores',
+          email: 'rodrigo.flores@email.com',
+          phone: '+51 987 234 567',
+          document: 'DNI 98.765.432',
+          rating: 3.9,
+          totalOrders: 6,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Música',
+          conversionRate: 71,
+          avgResponseTime: 3.5
+        },
+        amount: 480000,
+        currency: 'PEN',
+        status: 'aprobado',
+        shippingStatus: 'enviado',
+        createdDate: '2025-01-22',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-22',
+        items: 1,
+        minutesAgo: 210,
+        orderStatus: { main: 'APROBADO', shipping: 'ENVIADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'SERPOST',
+          trackingNumber: 'SP234567890',
+          alert: 'EN_TRANSITO',
+          estimatedDelivery: '2025-01-25',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-22',
+          time: '11:20',
+          price: 149.99,
+          currency: 'USD',
+          paymentMethod: 'PayPal'
+        },
+        amazon: { available: true, stock: 19, prime: true },
+        financial: { total: 480000, commission: 72000, net: 408000, profit: 110000, margin: 23 },
+        location: { country: 'PERU', city: 'Piura', region: 'Piura' },
+        priority: 'low',
+        notes: 'Para estudio de grabación personal',
+        tags: ['Audio', 'Beats', 'Wireless'],
+        salesRep: 'Laura Mendez',
+        probability: 85
+      },
+      {
+        id: 'MLA-2025025',
+        number: 'ORD-2025025',
+        sku: 'B08FGH123',
+        productTitle: 'Tesla Model Y Wireless Phone Charger Pad 15W Fast Charging...',
+        productImage: 'https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Patricio Vargas',
+          email: 'patricio.vargas@email.com',
+          phone: '+54 11 7890 1234',
+          document: 'DNI 28.901.234',
+          rating: 4.6,
+          totalOrders: 17,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Automotriz',
+          conversionRate: 89,
+          avgResponseTime: 2.3
+        },
+        amount: 320000,
+        currency: 'ARS',
+        status: 'aprobado',
+        shippingStatus: 'entregado',
+        createdDate: '2025-01-21',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-21',
+        items: 1,
+        minutesAgo: 600,
+        orderStatus: { main: 'ENTREGADO', shipping: 'ENTREGADO', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'MERCADOENVIOS',
+          trackingNumber: 'ME567890234',
+          alert: 'COMPLETADO',
+          estimatedDelivery: '2025-01-23',
+          deliveredDate: '2025-01-23'
+        },
+        purchase: {
+          date: '2025-01-21',
+          time: '17:50',
+          price: 79.99,
+          currency: 'USD',
+          paymentMethod: 'MercadoPago'
+        },
+        amazon: { available: true, stock: 25, prime: true },
+        financial: { total: 320000, commission: 48000, net: 272000, profit: 85000, margin: 27 },
+        location: { country: 'ARGENTINA', city: 'Mar del Plata', region: 'Buenos Aires' },
+        priority: 'low',
+        notes: 'Accesorio Tesla entregado perfectamente',
+        tags: ['Tesla', 'Accesorio', 'Completado'],
+        salesRep: 'Carlos Rodriguez',
+        probability: 100
+      },
+      {
+        id: 'MLC-2025026',
+        number: 'ORD-2025026',
+        sku: 'B07IJK456',
+        productTitle: 'Logitech MX Master 3S Wireless Mouse Advanced Precise...',
+        productImage: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=100&h=100&fit=crop',
+        customer: {
+          name: 'Fernanda Reyes',
+          email: 'fernanda.reyes@email.com',
+          phone: '+56 9 1234 5678',
+          document: 'RUT 16.234.567-8',
+          rating: 4.8,
+          totalOrders: 24,
+          avatar: '/api/placeholder/32/32',
+          industry: 'Programación',
+          conversionRate: 95,
+          avgResponseTime: 1.2
+        },
+        amount: 280000,
+        currency: 'CLP',
+        status: 'aprobado',
+        shippingStatus: 'pendiente',
+        createdDate: '2025-01-23',
+        lastActivity: '2025-01-23',
+        validUntil: '2025-02-23',
+        items: 1,
+        minutesAgo: 10,
+        orderStatus: { main: 'APROBADO', shipping: 'PENDIENTE', payment: 'PAGADO' },
+        logistics: {
+          provider1: 'ANICAM',
+          provider2: 'CHILEXPRESS',
+          trackingNumber: 'CHX789012345',
+          alert: 'PREALERTA',
+          estimatedDelivery: '2025-01-25',
+          deliveredDate: null
+        },
+        purchase: {
+          date: '2025-01-23',
+          time: '15:50',
+          price: 99.99,
+          currency: 'USD',
+          paymentMethod: 'Credit Card'
+        },
+        amazon: { available: true, stock: 13, prime: true },
+        financial: { total: 280000, commission: 42000, net: 238000, profit: 75000, margin: 27 },
+        location: { country: 'CHILE', city: 'Temuco', region: 'Araucanía' },
+        priority: 'medium',
+        notes: 'Desarrolladora de software - Cliente frecuente',
+        tags: ['Tech', 'Logitech', 'Programación'],
+        salesRep: 'Maria Elena',
+        probability: 92
       }
     ];
 
@@ -307,7 +1529,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   }, []);
 
   // Filtrar y ordenar órdenes
-  const filteredOrders = orders
+  const allFilteredOrders = orders
     .filter(order => {
       const matchesSearch = 
         order.productTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -348,6 +1570,23 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
       }
     });
 
+  // Calcular paginación
+  const totalPages = Math.ceil(allFilteredOrders.length / ordersPerPage);
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const filteredOrders = allFilteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+
+  // Cambiar página
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset página cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, countryFilter]);
+
   // Formatear moneda
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -377,12 +1616,14 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const getCountryFlag = (country) => {
     const flags = {
       'CHILE': '🇨🇱',
+      'PERU': '🇵🇪',
       'PERÚ': '🇵🇪',
       'COLOMBIA': '🇨🇴',
       'ECUADOR': '🇪🇨',
-      'MEXICO': '🇲🇽'
+      'MEXICO': '🇲🇽',
+      'ARGENTINA': '🇦🇷'
     };
-    return flags[country] || '🌎';
+    return flags[country] || '🇺🇳'; // Flag por defecto si no encuentra el país específico
   };
 
   // Manejar selección múltiple
@@ -397,10 +1638,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   };
 
   const handleSelectAll = () => {
-    if (selectedOrders.size === filteredOrders.length) {
+    if (selectedOrders.size === allFilteredOrders.length) {
       setSelectedOrders(new Set());
     } else {
-      setSelectedOrders(new Set(filteredOrders.map(o => o.id)));
+      setSelectedOrders(new Set(allFilteredOrders.map(o => o.id)));
     }
   };
 
@@ -626,7 +1867,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
             <input
               type="checkbox"
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+              checked={selectedOrders.size === allFilteredOrders.length && allFilteredOrders.length > 0}
               onChange={handleSelectAll}
             />
             <span className="ml-2 text-sm text-gray-600">
@@ -689,8 +1930,9 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
 
       {/* Vista de órdenes - Grid o Lista */}
       <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
-        {filteredOrders.map((order) => {
+        {filteredOrders.map((order, index) => {
           const StatusIcon = orderStatuses[order.status].icon;
+          const orderNumber = (currentPage - 1) * ordersPerPage + index + 1;
           
           const getPriorityColor = (priority) => {
             switch (priority) {
@@ -704,8 +1946,12 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           return (
             <div 
               key={order.id} 
-              className={`bg-white rounded-lg shadow-sm p-4 md:p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
+              className={`bg-white rounded-lg shadow-sm p-4 md:p-5 hover:shadow-lg hover:bg-gray-50 transition-all duration-300 cursor-pointer relative ${getPriorityColor(order.priority)}`}
             >
+              {/* Número de orden minimalista */}
+              <div className="absolute top-3 left-3 bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
+                #{orderNumber}
+              </div>
               {/* Header de la tarjeta */}
               {/* OPCIÓN 4: Layout de Tarjetas Pequeñas */}
               <div className="mb-4">
@@ -722,124 +1968,85 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                       />
                     </label>
                     
-                    {/* Ícono de producto */}
+                    {/* Imagen real del producto */}
                     <div className="relative">
-                      <Package className="w-10 h-10 text-blue-600 bg-blue-100 rounded-lg p-2" />
-                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
-                        order.priority === 'high' ? 'bg-red-500' : 
-                        order.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}></div>
+                      <img 
+                        src={order.productImage} 
+                        alt={order.productTitle}
+                        className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/48x48/f3f4f6/6b7280?text=IMG';
+                        }}
+                      />
+                      {/* Indicador de tiempo transcurrido */}
+                      <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full ${getTimeColor(order.minutesAgo)} flex items-center justify-center`}>
+                        <span className="text-[10px] font-bold text-white leading-none">
+                          {formatTimeShort(order.minutesAgo)}
+                        </span>
+                      </div>
                     </div>
                     
                     {/* Información del producto compacta */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0 mr-3">
+                          {/* Estados de la orden arriba del producto */}
+                          <div className="flex gap-2 mb-1">
+                            {/* Estado de Compra */}
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {orderStatuses[order.status].label}
+                            </span>
+                            {/* Estado de Envío */}
+                            {(() => {
+                              const ShippingIcon = shippingStatuses[order.shippingStatus]?.icon || Clock;
+                              return (
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${shippingStatuses[order.shippingStatus]?.color || 'bg-gray-100 text-gray-800'}`}>
+                                  <ShippingIcon className="h-3 w-3 mr-1" />
+                                  {shippingStatuses[order.shippingStatus]?.label || 'Pendiente'}
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <h3 className="text-sm font-bold text-gray-900 truncate">
-                            {order.productTitle.replace('2 Zapatillas Deportivas Running ', '')}
+                            {order.productTitle}
                           </h3>
-                          {order.amazon.prime && (
-                            <Zap className="inline h-3 w-3 text-yellow-500 ml-1" title="Amazon Prime" />
-                          )}
+                          
+                          {/* ID y Order Number en la misma línea */}
+                          <div className="text-xs mt-1">
+                            <div className="flex items-center">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">
+                                {order.id}
+                              </span>
+                              <span className="ml-2 text-gray-500">Order # </span>
+                              <a 
+                                href={`#order/${order.orderNumber || '2000012784807490'}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+                                title={`Ver orden: ${order.orderNumber || '2000012784807490'}`}
+                              >
+                                {order.orderNumber || '2000012784807490'}
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOrderInfoClick(order, e);
+                                }}
+                                className="ml-1 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                title="Ver información completa"
+                              >
+                                <Info className="h-3 w-3 text-gray-400 hover:text-gray-600" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         
-                        {/* ID y Order Number en línea */}
-                        <div className="text-xs text-gray-600 text-right">
-                          <div className="flex items-center">
-                            <Hash className="h-3 w-3 mr-1" />
-                            <span className="font-medium">{order.id}</span>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Order # </span>
-                            <a 
-                              href={`#order/${order.orderNumber || '2000012784807490'}`}
-                              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
-                              title={`Ver orden: ${order.orderNumber || '2000012784807490'}`}
-                            >
-                              {order.orderNumber || '2000012784807490'}
-                            </a>
-                          </div>
+                        {/* Ubicación alineada a la misma altura */}
+                        <div className="flex items-center">
+                          <MapPin className="h-3 w-3 text-gray-400 mr-1" />
+                          <span className="text-lg mr-1">{getCountryFlag(order.location.country)}</span>
+                          <span className="text-xs text-gray-600 font-medium">{order.location.city}</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Grid de tarjetas pequeñas - 4 columnas en desktop, 2 en mobile */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 border border-slate-200 border-t-0 rounded-b-lg overflow-hidden">
-                  {/* Card 1: ESTADO */}
-                  <div className="bg-green-50 border-r border-slate-200 p-3 last:border-r-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="text-green-600" size={16} />
-                      <span className="text-xs font-bold text-green-700 uppercase tracking-wide">Estado</span>
-                    </div>
-                    <div className="space-y-1">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {orderStatuses[order.status].label}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Card 2: CLIENTE */}
-                  <div className="bg-blue-50 border-r border-slate-200 p-3 lg:border-r last:border-r-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="text-blue-600" size={16} />
-                      <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Cliente</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">
-                            {order.customer.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold text-gray-900 truncate">
-                          {order.customer.name.split(' ')[0]} {order.customer.name.split(' ')[1]}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-600">
-                        <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                        <span className="font-semibold">{order.customer.rating}</span>
-                        <span className="mx-1">•</span>
-                        <span className="bg-gray-100 px-1.5 py-0.5 rounded font-medium">{order.customer.totalOrders} órdenes</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Card 3: UBICACIÓN */}
-                  <div className="bg-purple-50 border-r border-slate-200 p-3 border-t lg:border-t-0 border-r-0 lg:border-r last:border-r-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="text-purple-600" size={16} />
-                      <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Ubicación</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm font-semibold text-gray-900">
-                        <span className="text-lg mr-1">{getCountryFlag(order.location.country)}</span>
-                        <span>{order.location.city}</span>
-                      </div>
-                      <div className="text-xs text-gray-600 font-medium">
-                        {order.customer.industry}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Card 4: TIEMPO */}
-                  <div className="bg-orange-50 p-3 border-t lg:border-t-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="text-orange-600" size={16} />
-                      <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">Tiempo</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {formatTimeAgo(order.minutesAgo)}
-                      </div>
-                      {order.tags.slice(0, 1).map((tag, index) => (
-                        <span key={index} className="inline-flex items-center bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">
-                          <Target className="h-3 w-3 mr-1" />
-                          {tag}
-                        </span>
-                      ))}
                     </div>
                   </div>
                 </div>
@@ -854,7 +2061,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                   {/* Badges de Proveedores Logísticos */}
                   {/* Anicam - Colombia y Perú */}
                   {(order.location?.country === 'COLOMBIA' || order.location?.country === 'PERÚ') && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                       Anicam
                     </span>
                   )}
@@ -869,7 +2076,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                   {/* Fallback para otros países o datos no disponibles */}
                   {(!order.location?.country || (order.location?.country !== 'COLOMBIA' && order.location?.country !== 'PERÚ' && order.location?.country !== 'CHILE')) && (
                     <div className="flex gap-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                         Anicam
                       </span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-900">
@@ -1144,29 +2351,6 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
               </div>
 
-              {/* Fechas */}
-              <div className="mb-3">
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <Calendar className="h-3 w-3" />
-                      <span>Creada</span>
-                    </div>
-                    <p className="font-medium text-gray-900 mt-0.5">
-                      {formatDate(order.createdDate)}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <User className="h-3 w-3" />
-                      <span>Vendedor</span>
-                    </div>
-                    <p className="font-medium text-gray-900 mt-0.5">
-                      {order.salesRep}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
               {/* Panel de Mensajería Multicanal */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
@@ -1313,6 +2497,107 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Mostrando {indexOfFirstOrder + 1} a {Math.min(indexOfLastOrder, allFilteredOrders.length)} de {allFilteredOrders.length} órdenes
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Botón anterior */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <ChevronLeft size={16} className="mr-1" />
+                Anterior
+              </button>
+
+              {/* Números de página */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
+                  // Mostrar solo algunas páginas alrededor de la actual
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          pageNum === currentPage
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    pageNum === currentPage - 3 ||
+                    pageNum === currentPage + 3
+                  ) {
+                    return (
+                      <span key={pageNum} className="px-2 py-2 text-gray-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+
+              {/* Botón siguiente */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Siguiente
+                <ChevronRight size={16} className="ml-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup de información que sigue al mouse */}
+      {orderPopup && (
+        <div 
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: `${mousePosition.x + 10}px`,
+            top: `${mousePosition.y - 10}px`,
+          }}
+        >
+          <div className="bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm">
+            {(() => {
+              const order = orders.find(o => o.id === orderPopup);
+              return order ? (
+                <div className="space-y-1">
+                  <div className="font-semibold text-gray-900">{order.id}</div>
+                  <div className="text-gray-600">Order #</div>
+                  <div className="font-medium text-blue-600">{order.orderNumber || '2000012784807490'}</div>
+                </div>
+              ) : null;
+            })()}
           </div>
         </div>
       )}
