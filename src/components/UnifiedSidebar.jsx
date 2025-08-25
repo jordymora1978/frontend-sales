@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, 
   Users, 
@@ -12,13 +12,41 @@ import {
   Mail,
   DollarSign,
   Settings,
-  Archive
+  Archive,
+  Menu,
+  X
 } from 'lucide-react';
 import ssoManager from '../utils/ssoManager';
 import './UnifiedSidebar.css';
 
 const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
-  const [expandedSections, setExpandedSections] = useState(new Set(['sales']));
+  const [expandedSections, setExpandedSections] = useState(new Set(['sales', 'control']));
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) {
+        setIsMobileOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleMobileMenu = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  const handleNavItemClick = (itemId) => {
+    setActiveTab(itemId);
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+  };
 
   const toggleSection = (sectionId) => {
     const newExpanded = new Set(expandedSections);
@@ -51,6 +79,8 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
       type: "native",
       items: [
         { id: "orders", name: "Órdenes", icon: ShoppingCart },
+        { id: "orders2", name: "Órdenes Pro", icon: ShoppingCart },
+        { id: "orders2_0", name: "Órdenes Pro 2.0", icon: ShoppingCart },
         { id: "customers", name: "Clientes", icon: Users },
         { id: "quotes", name: "Cotizaciones", icon: FileText },
         { id: "dashboard", name: "Dashboard", icon: BarChart3 },
@@ -60,36 +90,36 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
     control: {
       title: "📊 Control",
       icon: BarChart3,
-      type: "external",
+      type: "native",
       items: [
         { 
+          id: "control-consolidador",
           name: "Consolidador", 
           icon: Archive,
-          url: window.location.hostname === 'localhost' ? "http://localhost:3000/consolidator" : "https://control.dropux.co/consolidator",
           description: "Procesamiento de órdenes"
         },
         { 
+          id: "control-validador",
           name: "Validador", 
           icon: CheckCircle,
-          url: window.location.hostname === 'localhost' ? "http://localhost:3000/validator" : "https://control.dropux.co/validator",
           description: "Verificación de duplicados"
         },
         { 
+          id: "control-trm",
           name: "TRM", 
           icon: DollarSign,
-          url: window.location.hostname === 'localhost' ? "http://localhost:3000/trm" : "https://control.dropux.co/trm",
           description: "Tasas de cambio"
         },
         { 
+          id: "control-reportes",
           name: "Reportes", 
           icon: TrendingUp,
-          url: window.location.hostname === 'localhost' ? "http://localhost:3000/reports" : "https://control.dropux.co/reports",
           description: "Reportes de utilidad"
         },
         { 
+          id: "control-gmail-drive",
           name: "Gmail Drive", 
           icon: Mail,
-          url: window.location.hostname === 'localhost' ? "http://localhost:3000/gmail-drive" : "https://control.dropux.co/gmail-drive",
           description: "Procesamiento automático"
         }
       ]
@@ -123,17 +153,36 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
   };
 
   return (
-    <aside className="unified-sidebar">
-      {/* Header del Hub */}
-      <div className="sidebar-header">
-        <div className="app-logo">
-          <ShoppingCart className="logo-icon" size={24} />
-          <div className="app-info">
-            <h1>Dropux Hub</h1>
-            <span className="app-subtitle">Sales Principal</span>
+    <>
+      {/* Mobile Overlay */}
+      {isMobile && isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={toggleMobileMenu}
+        />
+      )}
+
+      {/* Mobile Menu Toggle Button */}
+      {isMobile && (
+        <button
+          onClick={toggleMobileMenu}
+          className="fixed top-4 left-4 z-50 bg-blue-600 text-white p-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+        >
+          {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      )}
+
+      <aside className={`unified-sidebar ${isMobile ? (isMobileOpen ? 'mobile-open' : 'mobile-closed') : ''}`}>
+        {/* Header del Hub */}
+        <div className="sidebar-header">
+          <div className="app-logo">
+            <ShoppingCart className="logo-icon" size={24} />
+            <div className="app-info">
+              <h1>Dropux Hub</h1>
+              <span className="app-subtitle">Sales Principal</span>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Navegación */}
       <nav className="sidebar-nav">
@@ -175,7 +224,7 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
                         <div 
                           key={item.id}
                           className={`nav-item native ${activeTab === item.id ? 'active' : ''}`}
-                          onClick={() => setActiveTab(item.id)}
+                          onClick={() => handleNavItemClick(item.id)}
                         >
                           <div className="item-content">
                             <ItemIcon size={16} />
@@ -228,6 +277,7 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
     </aside>
+    </>
   );
 };
 

@@ -40,12 +40,7 @@
   letter-spacing: 0.5px;
 }
 
-/* Lista de órdenes */
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* Grid de órdenes - removido .orders-list ya que usamos Tailwind grid */
 
 /* Card de orden personalizada */
 .order-card-custom {

@@ -71,7 +71,7 @@ const OrdersCollapsible = () => {
         >
           {stores.map(store => (
             <option key={store.id} value={store.id}>
-              {store.store_name} ({store.site_name})
+              {store.nickname || store.store_name} - {store.site_name}
             </option>
           ))}
         </select>
@@ -414,7 +414,23 @@ const OrdersCollapsible = () => {
                         </div>
                         
                         <div style={{ fontSize: '12px', color: '#0066cc', marginTop: '5px' }}>
-                          <a href="#" style={{ textDecoration: 'none' }}>Cómo se calculan los impuestos ajenos a Mercado Pago</a>
+                          <button 
+                            style={{ 
+                              background: 'none', 
+                              border: 'none', 
+                              color: '#0066cc', 
+                              textDecoration: 'underline', 
+                              cursor: 'pointer', 
+                              fontSize: '12px', 
+                              padding: 0 
+                            }}
+                            onClick={() => {
+                              // Aquí podrías mostrar un modal o tooltip con información
+                              alert('Los impuestos se calculan automáticamente según la jurisdicción del cliente');
+                            }}
+                          >
+                            Cómo se calculan los impuestos ajenos a Mercado Pago
+                          </button>
                         </div>
                       </div>
                     )}

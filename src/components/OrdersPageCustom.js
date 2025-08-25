@@ -175,8 +175,8 @@ const OrdersPageCustom = ({ onOpenModal, onSelectOrder }) => {
         </div>
       )}
 
-      {/* Lista de órdenes */}
-      <div className="orders-list">
+      {/* Grid de órdenes en tarjetas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {orders.map((order, index) => (
           <div key={order.id} className="order-card-custom">
             {/* Header de la orden */}

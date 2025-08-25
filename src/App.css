@@ -1,17 +1,17 @@
 /* TEMA CLARO */
 .light-mode {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fb;
-  --bg-tertiary: #f0f2f6;
+  --bg-primary: #F3F4F6;
+  --bg-secondary: #F3F4F6;
+  --bg-tertiary: #e8e9eb;
   --text-primary: #262730;
   --text-secondary: #6c757d;
-  --border-color: #e6eaf1;
-  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --border-color: #d1d5db;
+  --shadow: 0 1px 3px rgba(0,0,0,0.05);
   --accent-color: #ff6b35;
   --accent-hover: #e55a2b;
   --sidebar-bg: #ffffff;
   --sidebar-active: #ff6b35;
-  --card-bg: #ffffff;
+  --card-bg: #F3F4F6;
 }
 
 /* TEMA OSCURO */
@@ -221,6 +221,10 @@
 
 /* CONTENT AREA */
 .content-area {
+  padding: 0;
+}
+
+.content-area main {
   padding: 24px;
 }
 
@@ -1711,4 +1715,40 @@
   background: #dc2626;
   border-color: #dc2626;
   transform: translateY(-1px);
+}
+
+/* FORZAR FONDO GRIS UNIFORME - SOLO EN AREAS GENERALES */
+.bg-gray-50,
+.bg-gray-100 {
+  background-color: #F3F4F6 !important;
+}
+
+/* Mantener fondo blanco para tarjetas, inputs y elementos interactivos */
+input, 
+select, 
+textarea,
+.bg-white,
+.card,
+.rounded-lg.bg-white,
+.shadow-lg,
+.shadow-md,
+.shadow,
+.border.bg-white,
+.modal-content,
+.order-card,
+.stat-card,
+.ml-stores-container,
+.store-card {
+  background-color: white !important;
+}
+
+/* Asegurar que el body tenga el fondo correcto */
+body {
+  background-color: #F3F4F6 !important;
+}
+
+/* Main content areas */
+.content-area,
+main {
+  background-color: #F3F4F6 !important;
 }

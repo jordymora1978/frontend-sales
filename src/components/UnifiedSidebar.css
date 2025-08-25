@@ -12,6 +12,17 @@
   top: 0;
   z-index: 1000;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Mobile States */
+.unified-sidebar.mobile-closed {
+  transform: translateX(-100%);
+}
+
+.unified-sidebar.mobile-open {
+  transform: translateX(0);
+  z-index: 50;
 }
 
 /* Header del Hub */
@@ -291,27 +302,91 @@
   background: #94a3b8;
 }
 
-/* Responsive */
+/* Mobile-First Responsive Design */
 @media (max-width: 768px) {
   .unified-sidebar {
     width: 100%;
-    height: auto;
-    position: relative;
+    height: 100vh;
+    position: fixed;
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    z-index: 50;
+    max-width: 320px;
+  }
+  
+  .sidebar-header {
+    padding: 16px 20px;
+  }
+  
+  .app-info h1 {
+    font-size: 16px;
+  }
+  
+  .app-subtitle {
+    font-size: 11px;
   }
   
   .sidebar-nav {
-    max-height: none;
-    overflow-y: visible;
+    padding: 16px 0;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .section-header {
+    margin: 0 8px;
+    padding: 10px 16px;
+  }
+  
+  .section-title {
+    font-size: 13px;
   }
   
   .section-items {
-    margin-left: 10px;
+    margin-left: 16px;
+    padding-left: 0;
   }
   
   .nav-item {
-    margin: 2px 8px;
+    margin: 2px 8px 2px 0;
+    padding: 8px 16px;
+  }
+  
+  .nav-item::before {
+    left: -18px;
+    width: 4px;
+    height: 4px;
+  }
+  
+  .item-name {
+    font-size: 12px;
+  }
+  
+  .item-description {
+    font-size: 10px;
+  }
+  
+  .sidebar-footer {
+    padding: 16px 20px;
+  }
+  
+  .app-version {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .ecosystem-label {
+    font-size: 9px;
+  }
+  
+  .app-dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .unified-sidebar {
+    width: 260px;
   }
 }
 
