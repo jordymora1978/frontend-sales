@@ -707,100 +707,139 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               className={`bg-white rounded-lg shadow-sm p-4 md:p-5 hover:shadow-lg transition-all duration-200 ${getPriorityColor(order.priority)}`}
             >
               {/* Header de la tarjeta */}
-              <div className={`${viewMode === 'list' ? 'flex-1' : ''} flex items-start justify-between ${viewMode === 'list' ? '' : 'mb-4'}`}>
-                <div className="flex items-start space-x-3">
-                  {/* Checkbox de selección */}
-                  <label className="flex items-center mt-1">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedOrders.has(order.id)}
-                      onChange={() => handleSelectOrder(order.id)}
-                    />
-                  </label>
-                  <div className="relative">
-                    <img 
-                      src={order.productImage} 
-                      alt={order.productTitle}
-                      className="w-12 h-12 object-cover rounded-lg border-2 border-gray-200"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/100x100?text=IMG';
-                      }}
-                    />
-                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
-                      order.priority === 'high' ? 'bg-red-500' : 
-                      order.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-tight">
-                        {order.productTitle}
-                      </h3>
-                      {order.amazon.prime && (
-                        <Zap className="h-4 w-4 text-yellow-500" title="Amazon Prime" />
-                      )}
+              {/* OPCIÓN 4: Layout de Tarjetas Pequeñas */}
+              <div className="mb-4">
+                {/* Header único con producto e info principal */}
+                <div className="bg-slate-50 border border-slate-200 rounded-t-lg p-3">
+                  <div className="flex items-start space-x-3">
+                    {/* Checkbox de selección */}
+                    <label className="flex items-center mt-1">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectedOrders.has(order.id)}
+                        onChange={() => handleSelectOrder(order.id)}
+                      />
+                    </label>
+                    
+                    {/* Ícono de producto */}
+                    <div className="relative">
+                      <Package className="w-10 h-10 text-blue-600 bg-blue-100 rounded-lg p-2" />
+                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
+                        order.priority === 'high' ? 'bg-red-500' : 
+                        order.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}></div>
                     </div>
-                    <div className="flex items-center flex-wrap gap-2">
-                      <p className="text-xs text-gray-600 flex items-center">
-                        <Hash className="h-3 w-3 mr-1" />
-                        {order.id} Order # 
-                        <a 
-                          href={`#order/${order.orderNumber || '2000012784807490'}`}
-                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer ml-1"
-                          title={`Ver orden: ${order.orderNumber || '2000012784807490'}`}
-                        >
-                          {order.orderNumber || '2000012784807490'}
-                        </a>
-                      </p>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
+                    
+                    {/* Información del producto compacta */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0 mr-3">
+                          <h3 className="text-sm font-bold text-gray-900 truncate">
+                            {order.productTitle.replace('2 Zapatillas Deportivas Running ', '')}
+                          </h3>
+                          {order.amazon.prime && (
+                            <Zap className="inline h-3 w-3 text-yellow-500 ml-1" title="Amazon Prime" />
+                          )}
+                        </div>
+                        
+                        {/* ID y Order Number en línea */}
+                        <div className="text-xs text-gray-600 text-right">
+                          <div className="flex items-center">
+                            <Hash className="h-3 w-3 mr-1" />
+                            <span className="font-medium">{order.id}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500">Order # </span>
+                            <a 
+                              href={`#order/${order.orderNumber || '2000012784807490'}`}
+                              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+                              title={`Ver orden: ${order.orderNumber || '2000012784807490'}`}
+                            >
+                              {order.orderNumber || '2000012784807490'}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Grid de tarjetas pequeñas - 4 columnas en desktop, 2 en mobile */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 border border-slate-200 border-t-0 rounded-b-lg overflow-hidden">
+                  {/* Card 1: ESTADO */}
+                  <div className="bg-green-50 border-r border-slate-200 p-3 last:border-r-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="text-green-600" size={16} />
+                      <span className="text-xs font-bold text-green-700 uppercase tracking-wide">Estado</span>
+                    </div>
+                    <div className="space-y-1">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${orderStatuses[order.status].color}`}>
                         <StatusIcon className="h-3 w-3 mr-1" />
                         {orderStatuses[order.status].label}
                       </span>
                     </div>
                   </div>
-                </div>
-                
-                {/* País */}
-                <div className="text-right">
-                  <div className="text-xl">{getCountryFlag(order.location.country)}</div>
-                  <div className="text-xs text-gray-500">{order.location.city}</div>
-                </div>
-              </div>
-
-              {/* Tiempo y tags */}
-              <div className="flex items-center justify-end mb-2 space-x-2">
-                <Clock className="h-3 w-3 text-gray-400" />
-                <span className="text-xs text-gray-500">{formatTimeAgo(order.minutesAgo)}</span>
-                {order.tags.slice(0, 1).map((tag, index) => (
-                  <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Cliente con avatar y métricas */}
-              <div className="mb-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">
-                      {order.customer.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {order.customer.name}
-                      </p>
-                      <div className="flex items-center">
-                        <Star className="h-3 w-3 text-yellow-400 mr-0.5" />
-                        <span className="text-xs text-gray-600">{order.customer.rating}</span>
+                  
+                  {/* Card 2: CLIENTE */}
+                  <div className="bg-blue-50 border-r border-slate-200 p-3 lg:border-r last:border-r-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="text-blue-600" size={16} />
+                      <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Cliente</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">
+                            {order.customer.name.charAt(0)}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-gray-900 truncate">
+                          {order.customer.name.split(' ')[0]} {order.customer.name.split(' ')[1]}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <Star className="h-3 w-3 text-yellow-400 mr-1" />
+                        <span className="font-semibold">{order.customer.rating}</span>
+                        <span className="mx-1">•</span>
+                        <span className="bg-gray-100 px-1.5 py-0.5 rounded font-medium">{order.customer.totalOrders} órdenes</span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 text-xs text-gray-600">
-                      <span>{order.customer.document}</span>
-                      <span className="bg-gray-100 px-1.5 py-0.5 rounded">{order.customer.totalOrders} órdenes</span>
-                      <span>• {order.customer.industry}</span>
+                  </div>
+                  
+                  {/* Card 3: UBICACIÓN */}
+                  <div className="bg-purple-50 border-r border-slate-200 p-3 border-t lg:border-t-0 border-r-0 lg:border-r last:border-r-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="text-purple-600" size={16} />
+                      <span className="text-xs font-bold text-purple-700 uppercase tracking-wide">Ubicación</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center text-sm font-semibold text-gray-900">
+                        <span className="text-lg mr-1">{getCountryFlag(order.location.country)}</span>
+                        <span>{order.location.city}</span>
+                      </div>
+                      <div className="text-xs text-gray-600 font-medium">
+                        {order.customer.industry}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Card 4: TIEMPO */}
+                  <div className="bg-orange-50 p-3 border-t lg:border-t-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="text-orange-600" size={16} />
+                      <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">Tiempo</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-gray-900">
+                        {formatTimeAgo(order.minutesAgo)}
+                      </div>
+                      {order.tags.slice(0, 1).map((tag, index) => (
+                        <span key={index} className="inline-flex items-center bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                          <Target className="h-3 w-3 mr-1" />
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
