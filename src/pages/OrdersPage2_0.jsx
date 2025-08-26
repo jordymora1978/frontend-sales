@@ -48,7 +48,8 @@ import {
   Archive,
   Info,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from 'lucide-react';
 
 const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
@@ -71,6 +72,105 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [ordersPerPage] = useState(12); // 12 órdenes por página
   const [quickSearch, setQuickSearch] = useState('');
   const [universalFilter, setUniversalFilter] = useState('all');
+  const [activeTagFilters, setActiveTagFilters] = useState([]);
+  const [tagSearchTerm, setTagSearchTerm] = useState('');
+  const [showTagCreatorModal, setShowTagCreatorModal] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('blue');
+  const [customTagColors, setCustomTagColors] = useState({});
+  
+  // Debug: mostrar cambios en customTagColors
+  useEffect(() => {
+    console.log('🎨 customTagColors updated:', customTagColors);
+  }, [customTagColors]);
+
+  // Sistema de colores para etiquetas
+  const tagColorOptions = [
+    { name: 'blue', label: 'Azul', classes: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { name: 'red', label: 'Rojo', classes: 'bg-red-50 text-red-700 border-red-200' },
+    { name: 'yellow', label: 'Amarillo', classes: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+    { name: 'green', label: 'Verde', classes: 'bg-green-50 text-green-700 border-green-200' },
+    { name: 'purple', label: 'Púrpura', classes: 'bg-purple-50 text-purple-700 border-purple-200' },
+    { name: 'pink', label: 'Rosa', classes: 'bg-pink-50 text-pink-700 border-pink-200' },
+    { name: 'indigo', label: 'Índigo', classes: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    { name: 'gray', label: 'Gris', classes: 'bg-gray-50 text-gray-700 border-gray-200' },
+    { name: 'orange', label: 'Naranja', classes: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { name: 'teal', label: 'Verde azulado', classes: 'bg-teal-50 text-teal-700 border-teal-200' }
+  ];
+
+  const tagColors = {
+    'Urgente': 'bg-red-50 text-red-700 border-red-200',
+    'VIP': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    'Premium': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Amazon': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Nuevo': 'bg-green-50 text-green-700 border-green-200',
+    'Descuento': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Express': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'Mayorista': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    'Reembolso': 'bg-pink-50 text-pink-700 border-pink-200',
+    'Aventura': 'bg-teal-50 text-teal-700 border-teal-200',
+    'Tecnología': 'bg-slate-50 text-slate-700 border-slate-200',
+    'Apple': 'bg-gray-50 text-gray-700 border-gray-200',
+    'GoPro': 'bg-gray-50 text-gray-700 border-gray-200',
+    'Dyson': 'bg-gray-50 text-gray-700 border-gray-200',
+    'default': 'bg-gray-50 text-gray-700 border-gray-200'
+  };
+
+  const getTagColor = (tag) => {
+    // Primero buscar en colores personalizados, luego en predefinidos
+    return customTagColors[tag] || tagColors[tag] || tagColors['default'];
+  };
+
+  const toggleTagFilter = (tag) => {
+    if (activeTagFilters.includes(tag)) {
+      setActiveTagFilters(activeTagFilters.filter(t => t !== tag));
+    } else {
+      setActiveTagFilters([...activeTagFilters, tag]);
+    }
+  };
+
+  const createNewTag = () => {
+    console.log('🔍 createNewTag called');
+    console.log('🔍 newTagName:', newTagName);
+    console.log('🔍 newTagColor:', newTagColor);
+    
+    if (newTagName.trim()) {
+      const tagName = newTagName.trim();
+      const selectedColorOption = tagColorOptions.find(c => c.name === newTagColor);
+      
+      console.log('🔍 tagName:', tagName);
+      console.log('🔍 selectedColorOption:', selectedColorOption);
+      
+      if (selectedColorOption) {
+        console.log('🔍 About to update customTagColors');
+        
+        // Agregar la nueva etiqueta al estado de colores personalizados
+        setCustomTagColors(prev => {
+          const newColors = {
+            ...prev,
+            [tagName]: selectedColorOption.classes
+          };
+          console.log('🔍 New customTagColors:', newColors);
+          return newColors;
+        });
+        
+        // Cerrar modal y limpiar campos
+        setShowTagCreatorModal(false);
+        setNewTagName('');
+        setNewTagColor('blue');
+        
+        // Mostrar mensaje de éxito
+        console.log(`✅ Nueva etiqueta creada: "${tagName}" con color ${selectedColorOption.label}`);
+        
+        // Opcional: agregar automáticamente a los filtros activos
+        // setActiveTagFilters(prev => [...prev, tagName]);
+      } else {
+        console.log('❌ selectedColorOption not found');
+      }
+    } else {
+      console.log('❌ newTagName is empty');
+    }
+  };
 
   // Estados de órdenes (Estado de Compra)
   const orderStatuses = {
@@ -1546,6 +1646,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
       const matchesCountry = countryFilter === 'all' || order.location.country === countryFilter;
       
+      // Filtro de etiquetas
+      const matchesTags = activeTagFilters.length === 0 || 
+        (order.tags && activeTagFilters.every(tag => order.tags.includes(tag)));
+      
       // Filtro universal
       let matchesUniversalFilter = true;
       switch (universalFilter) {
@@ -1570,7 +1674,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           matchesUniversalFilter = true;
       }
       
-      return matchesSearch && matchesStatus && matchesCountry && matchesUniversalFilter;
+      return matchesSearch && matchesStatus && matchesCountry && matchesTags && matchesUniversalFilter;
     })
     .sort((a, b) => {
       let aValue, bValue;
@@ -1898,18 +2002,111 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
 
               {/* Etiquetas */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Etiquetas</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {['VIP', 'Urgente', 'Amazon', 'Premium', 'Descuento', 'Reembolso', 'Aventura', 'Tecnología'].map((tag) => (
-                    <label key={tag} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                      />
-                      <span className="text-sm text-gray-700">{tag}</span>
-                    </label>
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Etiquetas {activeTagFilters.length > 0 && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {activeTagFilters.length} seleccionada{activeTagFilters.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </label>
+                  {activeTagFilters.length > 0 && (
+                    <button
+                      onClick={() => setActiveTagFilters([])}
+                      className="text-xs text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      Limpiar etiquetas
+                    </button>
+                  )}
                 </div>
+                
+                {/* Etiquetas seleccionadas actualmente */}
+                {activeTagFilters.length > 0 && (
+                  <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-xs text-blue-700 mb-1">Filtros activos:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {activeTagFilters.map((tag, idx) => (
+                        <span key={idx} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getTagColor(tag)}`}>
+                          {tag}
+                          <button
+                            onClick={() => setActiveTagFilters(activeTagFilters.filter(t => t !== tag))}
+                            className="ml-1 hover:text-red-600 transition-colors"
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Buscador de Etiquetas con Autocompletado */}
+                <div className="relative">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar etiquetas..."
+                      value={tagSearchTerm || ''}
+                      onChange={(e) => setTagSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  </div>
+                  
+                  {/* Sugerencias de Etiquetas */}
+                  {tagSearchTerm && tagSearchTerm.length > 0 && (() => {
+                    const allTags = [...new Set(orders.flatMap(order => order.tags || []))];
+                    const filteredTags = allTags.filter(tag => 
+                      tag.toLowerCase().includes(tagSearchTerm.toLowerCase()) &&
+                      !activeTagFilters.includes(tag)
+                    ).sort();
+                    
+                    return filteredTags.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {filteredTags.slice(0, 8).map((tag, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setActiveTagFilters([...activeTagFilters, tag]);
+                              setTagSearchTerm('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between group transition-colors"
+                          >
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getTagColor(tag)} group-hover:opacity-80`}>
+                              {tag}
+                            </span>
+                            <Plus className="h-3 w-3 text-gray-400 group-hover:text-blue-600" />
+                          </button>
+                        ))}
+                        
+                        {/* Mostrar "crear nueva etiqueta" si no existe */}
+                        {!allTags.some(tag => tag.toLowerCase() === tagSearchTerm.toLowerCase()) && tagSearchTerm.trim().length > 0 && (
+                          <button
+                            onClick={() => {
+                              setActiveTagFilters([...activeTagFilters, tagSearchTerm.trim()]);
+                              setTagSearchTerm('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between group transition-colors border-t border-gray-100"
+                          >
+                            <span className="text-sm text-gray-700">
+                              Crear "<span className="font-medium text-blue-600">{tagSearchTerm.trim()}</span>"
+                            </span>
+                            <Plus className="h-3 w-3 text-blue-500" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                {/* Mensaje si no hay etiquetas */}
+                {orders.every(order => !order.tags || order.tags.length === 0) && (
+                  <div className="text-center py-4 text-gray-500 text-sm mt-4">
+                    <Tag className="h-6 w-6 mx-auto mb-2 text-gray-300" />
+                    <p>No hay etiquetas disponibles</p>
+                    <p className="text-xs mt-1">Escribe arriba para crear una nueva</p>
+                  </div>
+                )}
               </div>
 
               {/* Rango de Valores */}
@@ -1942,6 +2139,8 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 onClick={() => {
                   setStatusFilter('all');
                   setCountryFilter('all');
+                  setActiveTagFilters([]);
+                  setTagSearchTerm('');
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
               >
@@ -1990,6 +2189,33 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 className="text-xs text-gray-500 hover:text-gray-700 underline"
               >
                 Limpiar
+              </button>
+            </div>
+          )}
+          
+          {/* Etiquetas Activas como Filtros */}
+          {activeTagFilters.length > 0 && (
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300">
+              <span className="text-xs text-gray-500">Filtros:</span>
+              {activeTagFilters.map((tag, idx) => (
+                <span 
+                  key={idx}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getTagColor(tag)}`}
+                >
+                  {tag}
+                  <button
+                    onClick={() => setActiveTagFilters(activeTagFilters.filter(t => t !== tag))}
+                    className="hover:text-red-600 transition-colors"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <button
+                onClick={() => setActiveTagFilters([])}
+                className="text-xs text-gray-500 hover:text-gray-700 underline"
+              >
+                Limpiar filtros
               </button>
             </div>
           )}
@@ -2121,6 +2347,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                               <StatusIcon className="h-3 w-3 mr-1" />
                               {orderStatuses[order.status].label}
                             </span>
+                            
                             {/* Estado de Envío */}
                             {(() => {
                               const ShippingIcon = shippingStatuses[order.shippingStatus]?.icon || Clock;
@@ -2539,6 +2766,68 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
               </div>
 
+              {/* Panel de Gestión de Etiquetas */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="text-purple-600" size={14} />
+                    <span className="text-xs font-medium text-purple-700">Etiquetas</span>
+                  </div>
+                  
+                  {/* Botón para agregar nueva etiqueta */}
+                  <button 
+                    className="p-1 text-purple-600 hover:bg-purple-100 rounded transition-colors"
+                    onClick={() => setShowTagCreatorModal(true)}
+                    title="Agregar etiqueta"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+                
+                {/* Etiquetas actuales de la orden */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {order.tags && order.tags.length > 0 ? (
+                    order.tags.map((tag, index) => (
+                      <div key={index} className="flex items-center group">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${getTagColor(tag)}`}>
+                          {tag}
+                          <button 
+                            className="ml-1 text-current opacity-0 group-hover:opacity-100 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log(`Eliminar etiqueta: ${tag}`);
+                            }}
+                            title={`Eliminar ${tag}`}
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-xs text-gray-500 italic">Sin etiquetas asignadas</span>
+                  )}
+                </div>
+                
+                {/* Sugerencias de etiquetas rápidas */}
+                <div className="border-t border-purple-100 pt-2">
+                  <div className="text-xs text-purple-600 mb-1 font-medium">Etiquetas sugeridas:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {['Urgente', 'VIP', 'Seguimiento', 'Problema'].map((suggestedTag) => (
+                      <button
+                        key={suggestedTag}
+                        onClick={() => console.log(`Agregar etiqueta sugerida: ${suggestedTag}`)}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-dashed border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400 transition-all"
+                        title={`Agregar ${suggestedTag}`}
+                      >
+                        <Plus className="h-2 w-2 mr-1" />
+                        {suggestedTag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* Acciones profesionales */}
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <div className="flex items-center space-x-1">
@@ -2696,6 +2985,130 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               >
                 Siguiente
                 <ChevronRight size={16} className="ml-1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREADOR DE ETIQUETAS */}
+      {showTagCreatorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Crear Nueva Etiqueta</h2>
+              <button
+                onClick={() => {
+                  setShowTagCreatorModal(false);
+                  setNewTagName('');
+                  setNewTagColor('blue');
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6 space-y-6">
+              
+              {/* Nombre de la Etiqueta */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre de la etiqueta
+                </label>
+                <input
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newTagName.trim()) {
+                      createNewTag();
+                    }
+                  }}
+                  placeholder="Ej: Prioritario, Seguimiento..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  maxLength={20}
+                  autoFocus
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {newTagName.length}/20 caracteres
+                </div>
+              </div>
+
+              {/* Selector de Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Color de la etiqueta
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {tagColorOptions.map((colorOption) => (
+                    <button
+                      key={colorOption.name}
+                      onClick={() => setNewTagColor(colorOption.name)}
+                      className={`relative p-2 rounded-lg border-2 transition-all ${
+                        newTagColor === colorOption.name 
+                          ? 'border-blue-500 ring-2 ring-blue-200' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      title={colorOption.label}
+                    >
+                      <div className={`w-full h-8 rounded ${colorOption.classes.split(' ')[0]} flex items-center justify-center`}>
+                        <span className={`text-xs font-medium ${colorOption.classes.split(' ')[1]}`}>
+                          Aa
+                        </span>
+                      </div>
+                      {newTagColor === colorOption.name && (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vista Previa */}
+              {newTagName.trim() && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vista previa
+                  </label>
+                  <div className="flex items-center">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                      tagColorOptions.find(c => c.name === newTagColor)?.classes || 'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}>
+                      {newTagName.trim()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => {
+                  setShowTagCreatorModal(false);
+                  setNewTagName('');
+                  setNewTagColor('blue');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={createNewTag}
+                disabled={!newTagName.trim()}
+                className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  newTagName.trim()
+                    ? 'text-white bg-blue-600 hover:bg-blue-700'
+                    : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                }`}
+              >
+                Crear Etiqueta
               </button>
             </div>
           </div>
