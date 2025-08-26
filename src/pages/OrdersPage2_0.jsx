@@ -57,10 +57,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState(new Set());
   const [financeExpanded, setFinanceExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -69,6 +69,8 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(12); // 12 órdenes por página
+  const [quickSearch, setQuickSearch] = useState('');
+  const [universalFilter, setUniversalFilter] = useState('all');
 
   // Estados de órdenes (Estado de Compra)
   const orderStatuses = {
@@ -1531,16 +1533,44 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   // Filtrar y ordenar órdenes
   const allFilteredOrders = orders
     .filter(order => {
+      // Búsqueda general (searchTerm + quickSearch)
+      const searchQuery = (searchTerm + ' ' + quickSearch).toLowerCase();
       const matchesSearch = 
-        order.productTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.number.includes(searchTerm) ||
-        order.id.includes(searchTerm);
+        order.productTitle.toLowerCase().includes(searchQuery) ||
+        order.customer.name.toLowerCase().includes(searchQuery) ||
+        order.number.toLowerCase().includes(searchQuery) ||
+        order.id.toLowerCase().includes(searchQuery) ||
+        order.location.city.toLowerCase().includes(searchQuery) ||
+        order.location.country.toLowerCase().includes(searchQuery);
       
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
       const matchesCountry = countryFilter === 'all' || order.location.country === countryFilter;
       
-      return matchesSearch && matchesStatus && matchesCountry;
+      // Filtro universal
+      let matchesUniversalFilter = true;
+      switch (universalFilter) {
+        case 'high-priority':
+          matchesUniversalFilter = order.priority === 'high';
+          break;
+        case 'today':
+          matchesUniversalFilter = new Date(order.createdDate).toDateString() === new Date().toDateString();
+          break;
+        case 'this-week':
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          matchesUniversalFilter = new Date(order.createdDate) >= weekAgo;
+          break;
+        case 'vip-customers':
+          matchesUniversalFilter = order.tags && order.tags.includes('VIP');
+          break;
+        case 'pending-payment':
+          matchesUniversalFilter = order.orderStatus && order.orderStatus.payment === 'PENDIENTE';
+          break;
+        default:
+          matchesUniversalFilter = true;
+      }
+      
+      return matchesSearch && matchesStatus && matchesCountry && matchesUniversalFilter;
     })
     .sort((a, b) => {
       let aValue, bValue;
@@ -1585,7 +1615,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   // Reset página cuando cambian los filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, countryFilter]);
+  }, [searchTerm, statusFilter, countryFilter, quickSearch, universalFilter]);
 
   // Formatear moneda
   const formatCurrency = (amount) => {
@@ -1674,109 +1704,6 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   return (
     <div className="space-y-6 mt-[10px] ml-[12px] mr-[12px]">
 
-      {/* Filtros y búsqueda */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex space-x-4">
-          {/* Barra de búsqueda - 50% */}
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar por ID, cliente, producto o número..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Botón de filtros avanzados - 50% */}
-          <div className="flex-1 relative">
-            <button
-              className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            >
-              <FilterIcon size={18} className="text-gray-600" />
-              <span className="text-gray-700">Filtros</span>
-            </button>
-
-            {/* Dropdown de filtros avanzados */}
-            {showAdvancedFilters && (
-              <>
-                {/* Overlay */}
-                <div 
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowAdvancedFilters(false)}
-                />
-                
-                {/* Modal de filtros */}
-                <div className="absolute top-full mt-2 right-0 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-20 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Filtros Avanzados</h3>
-                    <button
-                      onClick={() => setShowAdvancedFilters(false)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                    >
-                      <X size={16} className="text-gray-400" />
-                    </button>
-                  </div>
-                  
-                  {/* Contenido de filtros - placeholder para futuro */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Estados
-                      </label>
-                      <div className="text-sm text-gray-500">
-                        (Configuración pendiente)
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Países
-                      </label>
-                      <div className="text-sm text-gray-500">
-                        (Configuración pendiente)
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Rango de fechas
-                      </label>
-                      <div className="text-sm text-gray-500">
-                        (Configuración pendiente)
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Monto
-                      </label>
-                      <div className="text-sm text-gray-500">
-                        (Configuración pendiente)
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Botones de acción */}
-                  <div className="flex justify-between mt-6 pt-4 border-t">
-                    <button className="px-3 py-2 text-gray-600 hover:text-gray-800 text-sm">
-                      Limpiar filtros
-                    </button>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Métricas Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Total Órdenes */}
@@ -1860,71 +1787,268 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         </div>
       </div>
 
-      {/* Header de selección con botones de acción */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <label className="flex items-center">
+      {/* TOOLBAR SIMPLE - Solo Búsqueda y Filtros Avanzados */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6">
+        <div className="flex items-center gap-4">
+          
+          {/* Búsqueda Principal */}
+          <div className="relative flex-1 max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar órdenes, clientes, productos..."
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Botón Filtros Avanzados */}
+          <button
+            onClick={() => setShowAdvancedFilters(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-colors duration-200"
+          >
+            <Filter className="h-4 w-4" />
+            Filtros Avanzados
+          </button>
+
+          {/* Contador de Resultados */}
+          <div className="text-sm text-gray-600 font-medium hidden sm:block">
+            {allFilteredOrders.length} resultados
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL FILTROS AVANZADOS */}
+      {showAdvancedFilters && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Filtros Avanzados</h2>
+              <button
+                onClick={() => setShowAdvancedFilters(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6 space-y-6">
+              
+              {/* Estados */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Estado de la Orden</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {['aprobado', 'procesando', 'enviado', 'entregado', 'cancelado', 'pendiente'].map((status) => (
+                    <label key={status} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                        checked={statusFilter === status}
+                        onChange={(e) => setStatusFilter(e.target.checked ? status : 'all')}
+                      />
+                      <span className="text-sm text-gray-700 capitalize">{status}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Países */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Países</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { code: 'COLOMBIA', flag: '🇨🇴', name: 'Colombia' },
+                    { code: 'CHILE', flag: '🇨🇱', name: 'Chile' },
+                    { code: 'PERU', flag: '🇵🇪', name: 'Perú' },
+                    { code: 'ECUADOR', flag: '🇪🇨', name: 'Ecuador' },
+                    { code: 'ARGENTINA', flag: '🇦🇷', name: 'Argentina' },
+                    { code: 'MEXICO', flag: '🇲🇽', name: 'México' }
+                  ].map((country) => (
+                    <label key={country.code} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                        checked={countryFilter === country.code}
+                        onChange={(e) => setCountryFilter(e.target.checked ? country.code : 'all')}
+                      />
+                      <span className="text-sm text-gray-700">{country.flag} {country.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rango de Fechas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Rango de Fechas</label>
+                <select className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="all">Todas las fechas</option>
+                  <option value="today">Hoy</option>
+                  <option value="yesterday">Ayer</option>
+                  <option value="week">Esta semana</option>
+                  <option value="month">Este mes</option>
+                  <option value="quarter">Último trimestre</option>
+                </select>
+              </div>
+
+              {/* Etiquetas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Etiquetas</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {['VIP', 'Urgente', 'Amazon', 'Premium', 'Descuento', 'Reembolso', 'Aventura', 'Tecnología'].map((tag) => (
+                    <label key={tag} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                      />
+                      <span className="text-sm text-gray-700">{tag}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rango de Valores */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Rango de Valores</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Mínimo</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Máximo</label>
+                    <input
+                      type="number"
+                      placeholder="10000"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => {
+                  setStatusFilter('all');
+                  setCountryFilter('all');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Limpiar Todo
+              </button>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAdvancedFilters(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => setShowAdvancedFilters(false)}
+                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BARRA DELGADA - Selección y Controles de Vista */}
+      <div className="bg-white border border-gray-200 rounded-md px-4 py-2 mb-4 mt-1 flex items-center justify-between">
+        
+        {/* Lado Izquierdo - Selección de Órdenes */}
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
               checked={selectedOrders.size === allFilteredOrders.length && allFilteredOrders.length > 0}
               onChange={handleSelectAll}
             />
-            <span className="ml-2 text-sm text-gray-600">
-              {selectedOrders.size > 0 ? `${selectedOrders.size} seleccionadas` : 'Seleccionar todas'}
-            </span>
+            Seleccionar todas ({selectedOrders.size})
           </label>
           
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <button 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-              onClick={() => handleOrderAction('new')}
-            >
-              <Plus size={20} className="mr-2" />
-              Nueva Orden
-            </button>
-            
-            <button 
-              className="inline-flex items-center px-3 py-2 border border-gray-300 hover:border-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
-              onClick={() => handleOrderAction('import')}
-            >
-              <Download size={18} className="mr-2" />
-              Importar
-            </button>
-            
-            <button 
-              className="inline-flex items-center px-3 py-2 border border-gray-300 hover:border-gray-400 text-gray-700 font-medium rounded-lg transition-colors"
-              disabled={selectedOrders.size === 0}
-              onClick={() => handleOrderAction('export-selected')}
-            >
-              <Download size={18} className="mr-2" />
-              Exportar ({selectedOrders.size})
-            </button>
-          </div>
+          {selectedOrders.size > 0 && (
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300">
+              <span className="text-xs text-gray-500">{selectedOrders.size} seleccionadas</span>
+              <button
+                onClick={() => setSelectedOrders(new Set())}
+                className="text-xs text-gray-500 hover:text-gray-700 underline"
+              >
+                Limpiar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Lado Derecho - Controles Minimalistas */}
+        <div className="flex items-center gap-1">
           
-          {/* Botones de Vista Grid/Lista */}
-          <div className="flex bg-white rounded-lg border overflow-hidden ml-3">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Grid
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-blue-500 text-white' 
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              Lista
-            </button>
-          </div>
+          {/* Importar */}
+          <button
+            onClick={() => handleOrderAction('import')}
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors duration-200"
+            title="Importar órdenes"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+
+          {/* Exportar */}
+          <button
+            onClick={() => handleOrderAction('export-selected')}
+            className={`p-1.5 rounded transition-colors duration-200 ${
+              selectedOrders.size > 0 
+                ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-200' 
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title={`Exportar ${selectedOrders.size > 0 ? `${selectedOrders.size} órdenes` : 'selecciona órdenes'}`}
+            disabled={selectedOrders.size === 0}
+          >
+            <Upload className="h-4 w-4" />
+          </button>
+
+          {/* Separador */}
+          <div className="w-px h-4 bg-gray-300 mx-1"></div>
+
+          {/* Grid View */}
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded transition-colors duration-200 ${
+              viewMode === 'grid'
+                ? 'text-blue-600 bg-blue-100'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+            }`}
+            title="Vista en cuadrícula"
+          >
+            <span className="block w-4 h-4 text-xs leading-none">⊞</span>
+          </button>
+
+          {/* List View */}
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded transition-colors duration-200 ${
+              viewMode === 'list'
+                ? 'text-blue-600 bg-blue-100'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+            }`}
+            title="Vista en lista"
+          >
+            <span className="block w-4 h-4 text-xs leading-none">☰</span>
+          </button>
         </div>
       </div>
 
