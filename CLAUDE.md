@@ -6,7 +6,7 @@
 
 **Service**: Sales Frontend (React UI)
 **Domain**: https://sales.dropux.co
-**Local**: http://localhost:3001
+**Local**: http://localhost:3005
 **Backend**: https://api-sales.dropux.co
 **Function**: MercadoLibre sales management, AI-powered order processing, automated business intelligence
 
@@ -91,6 +91,36 @@ src/
 - **Performance Metrics**: Order processing times
 - **Revenue Tracking**: Financial summaries
 - **AI Intelligence Reports**: Tag distribution and pattern insights
+
+### 📦 **Products Suit** (NEW)
+- **Catálogo Amazon**: Amazon product catalog management (placeholder)
+- **Publicaciones ML**: MercadoLibre listings management (placeholder)
+- **Stock Proveedores**: Supplier inventory management (placeholder)
+
+### 🎯 **Current Menu Structure**
+
+#### **NAVEGACIÓN**
+- Dashboard
+- Mis Ventas (OrdersPage2_0 - Main sales page with AI)
+- Mis Clientes
+- Mis Reportes
+- Cotizaciones
+
+#### **SISTEMA**
+- Configuración ▶️
+  - Mis Tiendas
+  - Sincronizar Órdenes
+- Control Suite ▶️
+  - Consolidador 2.0
+  - Validador
+  - TRM Monitor
+  - Gmail Drive
+  - Google API
+- Products Suit ▶️
+  - Catálogo Amazon
+  - Publicaciones ML
+  - Stock Proveedores
+- Ayuda
 
 ## 🚨 RULES FOR CLAUDE
 
@@ -178,7 +208,7 @@ REACT_APP_SALES_API_URL=http://localhost:8001
 REACT_APP_SALES_API_URL=https://api-sales.dropux.co
 
 # Development
-PORT=3001
+PORT=3005
 BROWSER=none
 ```
 
