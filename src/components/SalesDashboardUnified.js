@@ -3,8 +3,6 @@ import { X, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PremiumSidebar, { ThemeProvider as PremiumThemeProvider } from './PremiumSidebar';
 import PremiumHeader from './PremiumHeader';
-import OrdersPageCustom from './OrdersPageCustom';
-import OrdersPage2 from '../pages/OrdersPage2';
 import OrdersPage2_0 from '../pages/OrdersPage2_0';
 import ConnectMLStore from './ConnectMLStore.jsx';
 import CustomersPage from '../pages/CustomersPage';
@@ -19,7 +17,6 @@ import ReportesPage from '../pages/control/ReportesPage';
 import GmailDrivePage from '../pages/control/GmailDrivePage';
 import SincOrdersMeli from '../pages/SincOrdersMeli';
 import GoogleAPI from '../pages/GoogleAPI';
-import './OrdersPageCustom.css';
 import apiService from '../services/api';
 
 const SalesDashboardUnified = () => {
@@ -131,7 +128,7 @@ const SalesDashboardUnified = () => {
     switch (activeTab) {
       case 'orders':
         return (
-          <OrdersPageCustom 
+          {/* OrdersPageCustom removed 
             onOpenModal={(tab) => {
               setShowMessageModal(true);
               setModalTab(tab);
@@ -141,7 +138,7 @@ const SalesDashboardUnified = () => {
         );
       case 'orders2':
         return (
-          <OrdersPage2 
+          {/* OrdersPage2 removed 
             onOpenModal={(tab) => {
               setShowMessageModal(true);
               setModalTab(tab);
@@ -150,12 +147,12 @@ const SalesDashboardUnified = () => {
           />
         );
       case 'orders-custom':
-        return <OrdersPageCustom />;
+        return <div className="p-6"><p className="text-gray-600">Página de órdenes personalizadas ha sido removida.</p></div>;
       case 'orders2':
-        return <OrdersPage2 />;
+        return <div className="p-6"><p className="text-gray-600">Página OrdersPage2 ha sido removida.</p></div>;
       case 'orders2_0':
         return (
-          <OrdersPage2_0 
+          {/* OrdersPage2 removed_0 
             onOpenModal={(tab) => {
               setShowMessageModal(true);
               setModalTab(tab);

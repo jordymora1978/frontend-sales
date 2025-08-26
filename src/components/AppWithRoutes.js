@@ -2,8 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PremiumSidebar, { ThemeProvider as PremiumThemeProvider } from './PremiumSidebar';
 import PremiumHeader from './PremiumHeader';
-import OrdersPageCustom from './OrdersPageCustom';
-import OrdersPage2 from '../pages/OrdersPage2';
 import OrdersPage2_0 from '../pages/OrdersPage2_0';
 import CustomersPage from '../pages/CustomersPage';
 import QuotesPageComponent from './QuotesPage';
@@ -59,8 +57,6 @@ const AppWithRoutes = () => {
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<SalesDashboardPage />} />
-              <Route path="/orders-custom" element={<OrdersPageCustom />} />
-              <Route path="/orders2" element={<OrdersPage2 />} />
               <Route path="/orders2_0" element={<OrdersPage2_0 />} />
               <Route path="/quotes" element={<QuotesPageComponent />} />
               <Route path="/customers" element={<CustomersPage />} />

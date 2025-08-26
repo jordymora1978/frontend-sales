@@ -87,27 +87,10 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
 
   const menuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
-    { id: 'orders-custom', name: 'Órdenes A (Custom)', icon: ShoppingBag, badge: 'A', path: '/orders-custom' },
-    { id: 'orders2', name: 'Órdenes C (Pro)', icon: ShoppingBag, badge: 'C', path: '/orders2' },
-    { id: 'orders2_0', name: 'Órdenes D (Pro 2.0)', icon: ShoppingBag, badge: 'D', path: '/orders2_0' },
-    { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3', path: '/quotes' },
-    { id: 'customers', name: 'Clientes', icon: Users, badge: null, path: '/customers' },
-    { id: 'ml-stores', name: 'ML Stores', icon: Package, badge: 'new', path: '/ml-stores' },
-    { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: RefreshCw, badge: null, path: '/ml-sync' },
-    { id: 'google-api', name: 'Google API', icon: Cloud, badge: 'beta', path: '/google-api' },
-    {
-      id: 'control',
-      name: 'Control Suite',
-      icon: FolderOpen,
-      isGroup: true,
-      items: [
-        { id: 'control-consolidador', name: 'Consolidador 2.0', icon: Archive, path: '/control-consolidador' },
-        { id: 'control-validador', name: 'Validador', icon: CheckCircle2, path: '/control-validador' },
-        { id: 'control-trm', name: 'TRM Monitor', icon: DollarSign, path: '/control-trm' },
-        { id: 'control-reportes', name: 'Analytics', icon: TrendingUp, path: '/control-reportes' },
-        { id: 'control-gmail-drive', name: 'Gmail Drive', icon: Mail, path: '/control-gmail-drive' }
-      ]
-    }
+    { id: 'orders2_0', name: 'Mis Ventas', icon: ShoppingBag, badge: null, path: '/orders2_0' },
+    { id: 'customers', name: 'Mis Clientes', icon: Users, badge: null, path: '/customers' },
+    { id: 'control-reportes', name: 'Mis Reportes', icon: TrendingUp, badge: null, path: '/control-reportes' },
+    { id: 'quotes', name: 'Mis Cotizaciones', icon: FileText, badge: '3', path: '/quotes' }
   ];
 
   const toggleExpanded = (itemId) => {
@@ -290,12 +273,115 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             <div className="nav-section nav-bottom">
               <div className="section-label">SISTEMA</div>
               
-              <button className="nav-item">
+              <button
+                className={`nav-item nav-group ${
+                  expandedItems.has('configuracion') ? 'expanded' : ''
+                }`}
+                onClick={() => toggleExpanded('configuracion')}
+              >
                 <div className="item-content">
                   <Settings className="item-icon" size={18} />
                   <span className="item-name">Configuración</span>
+                  <ChevronRight className={`expand-icon ${
+                    expandedItems.has('configuracion') ? 'expanded' : ''
+                  }`} size={14} />
                 </div>
               </button>
+              
+              {expandedItems.has('configuracion') && (
+                <div className="sub-items">
+                  <Link 
+                    to="/ml-stores"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Package className="item-icon" size={16} />
+                      <span className="item-name">Mis Tiendas</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/ml-sync"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <RefreshCw className="item-icon" size={16} />
+                      <span className="item-name">Sincronizar Órdenes</span>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              <button
+                className={`nav-item nav-group ${
+                  expandedItems.has('control') ? 'expanded' : ''
+                }`}
+                onClick={() => toggleExpanded('control')}
+              >
+                <div className="item-content">
+                  <FolderOpen className="item-icon" size={18} />
+                  <span className="item-name">Control Suite</span>
+                  <ChevronRight className={`expand-icon ${
+                    expandedItems.has('control') ? 'expanded' : ''
+                  }`} size={14} />
+                </div>
+              </button>
+              
+              {expandedItems.has('control') && (
+                <div className="sub-items">
+                  <Link 
+                    to="/control-consolidador"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Archive className="item-icon" size={16} />
+                      <span className="item-name">Consolidador 2.0</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/control-validador"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <CheckCircle2 className="item-icon" size={16} />
+                      <span className="item-name">Validador</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/control-trm"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <DollarSign className="item-icon" size={16} />
+                      <span className="item-name">TRM Monitor</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/control-gmail-drive"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Mail className="item-icon" size={16} />
+                      <span className="item-name">Gmail Drive</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/google-api"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Cloud className="item-icon" size={16} />
+                      <span className="item-name">Google API</span>
+                    </div>
+                  </Link>
+                </div>
+              )}
 
               <button className="nav-item">
                 <div className="item-content">

@@ -3,8 +3,6 @@ import { User, Package, Truck, MessageSquare, ExternalLink, Sun, Moon, ShoppingC
 import { useAuth } from '../context/AuthContext';
 import ConnectMLStore from './ConnectMLStore.jsx';
 import MLOrdersSync from '../pages/MLOrdersSync';
-import OrdersPageCustom from './OrdersPageCustom';
-import './OrdersPageCustom.css';
 import apiService from '../services/api';
 
 const SalesDashboard = () => {
@@ -477,13 +475,10 @@ const SalesDashboard = () => {
         {/* CONTENT AREA */}
         <div className="content-area">
           {activeTab === 'orders' && (
-            <OrdersPageCustom 
-              onSelectOrder={(order) => setSelectedOrder(order)}
-              onOpenModal={(tab) => {
-                setShowMessageModal(true);
-                setModalTab(tab);
-              }}
-            />
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">Órdenes</h2>
+              <p className="text-gray-600">La página de órdenes personalizadas ha sido removida.</p>
+            </div>
           )}
 
           {activeTab === 'ml-stores' && (
