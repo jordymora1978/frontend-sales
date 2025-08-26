@@ -75,10 +75,287 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [activeTagFilters, setActiveTagFilters] = useState([]);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
   const [showTagCreatorModal, setShowTagCreatorModal] = useState(false);
+
+  // Función para actualizar tags de una orden
+  const updateOrderTags = (orderId, newTags) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, tags: newTags }
+          : order
+      )
+    );
+  };
+
+  // Función para agregar tag
+  const addTagToOrder = async (orderId, tag) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const currentTags = order.tags || [];
+    if (currentTags.includes(tag)) return; // Ya existe
+    
+    const newTags = [...currentTags, tag];
+    updateOrderTags(orderId, newTags);
+    
+    // TODO: Llamada al backend
+    console.log(`API Call: POST /orders/${orderId}/tags`, { tag });
+  };
+
+  // Función para eliminar tag
+  const removeTagFromOrder = async (orderId, tag) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const currentTags = order.tags || [];
+    const newTags = currentTags.filter(t => t !== tag);
+    updateOrderTags(orderId, newTags);
+    
+    // TODO: Llamada al backend
+    console.log(`API Call: DELETE /orders/${orderId}/tags/${tag}`);
+  };
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('blue');
   const [customTagColors, setCustomTagColors] = useState({});
   
+  // Estados IA - Filtros y análisis inteligente
+  const [showIATags, setShowIATags] = useState(false); // Mostrar etiquetas IA
+  const [selectedIATags, setSelectedIATags] = useState([]); // Etiquetas IA seleccionadas
+  const [isAnalyzing, setIsAnalyzing] = useState(false); // Estado de análisis en progreso
+  const [lastAnalysisTags, setLastAnalysisTags] = useState([]); // Etiquetas encontradas en último análisis
+  
+  // Etiquetas IA predefinidas
+  const predefinedIATags = [
+    'Intención de Cancelar',
+    'Pide Factura',
+    'Duda con Envío',
+    'Garantía',
+    'Precio Competencia',
+    'Stock Agotado',
+    'Cambio de Dirección',
+    'Reclamo Calidad'
+  ];
+
+
+  // Función para togglear etiqueta IA
+  const toggleIATag = (tag) => {
+    setSelectedIATags(prev => {
+      if (prev.includes(tag)) {
+        return prev.filter(t => t !== tag);
+      } else {
+        return [...prev, tag];
+      }
+    });
+  };
+
+  // Función para limpiar filtros IA
+  const clearIAFilters = () => {
+    setSelectedIATags([]);
+    setShowIATags(false);
+  };
+
+  // Mock data de mensajes MercadoLibre por orden
+  const mockMLMessages = {
+    1: ["Hola, necesito la factura de mi pedido urgente", "¿Cuándo me llega?"],
+    2: ["Quiero cancelar mi orden por favor", "Ya no lo necesito"],
+    3: ["¿Cuándo llega mi pedido?", "Necesito que llegue antes del viernes"],
+    4: ["El producto llegó defectuoso", "Quiero garantía", "No funciona bien"],
+    5: ["Vi el mismo producto más barato en otra tienda", "¿Pueden igualar el precio?"],
+    6: ["¿Tienen stock del producto en negro?", "El que pedí está agotado"],
+    7: ["Me mudé, necesito cambiar la dirección", "Nueva dirección: Calle 123"],
+    8: ["El producto no es lo que esperaba", "La calidad es mala", "Quiero devolverlo"]
+  };
+
+  // Función de análisis inteligente de mensajes ML
+  const analyzeMLMessages = (messages) => {
+    const detectedTags = [];
+    const allMessages = messages.join(' ').toLowerCase();
+    
+    console.log('🔬 Analizando mensajes:', messages);
+    console.log('📄 Texto completo:', allMessages);
+
+    // Patrones de detección inteligente
+    const patterns = {
+      'Intención de Cancelar': ['cancelar', 'ya no lo necesito', 'no quiero', 'anular'],
+      'Pide Factura': ['factura', 'invoice', 'recibo', 'comprobante', 'necesito factura'],
+      'Duda con Envío': ['cuándo llega', 'cuándo me llega', 'envío', 'entrega', 'tracking'],
+      'Garantía': ['defectuoso', 'garantía', 'no funciona', 'dañado', 'roto'],
+      'Precio Competencia': ['más barato', 'mejor precio', 'igualar precio', 'competencia'],
+      'Stock Agotado': ['stock', 'agotado', 'disponible', 'tienen', 'hay'],
+      'Cambio de Dirección': ['cambiar dirección', 'nueva dirección', 'mudé', 'mudar'],
+      'Reclamo Calidad': ['calidad mala', 'no esperaba', 'decepcionado', 'devolverlo']
+    };
+
+    // Detectar patrones
+    Object.entries(patterns).forEach(([tag, keywords]) => {
+      const hasPattern = keywords.some(keyword => allMessages.includes(keyword));
+      if (hasPattern) {
+        detectedTags.push(tag);
+        console.log(`✅ Patrón detectado: ${tag} (palabras clave encontradas)`);
+      }
+    });
+    
+    console.log('🏷️ Tags finales detectados:', detectedTags);
+    return detectedTags;
+  };
+
+  // Función principal de análisis IA (cuando se hace click al robot)
+  const runIntelligentAnalysis = async () => {
+    console.log('🤖 Iniciando análisis IA...');
+    console.log('📊 Órdenes disponibles:', orders.length);
+    console.log('📝 Mock messages:', Object.keys(mockMLMessages).length);
+    
+    // Prueba rápida de la función analyzeMLMessages
+    console.log('🧪 Prueba rápida de analyzeMLMessages:');
+    const testMessages = ["Hola, necesito la factura de mi pedido urgente", "¿Cuándo me llega?"];
+    const testResult = analyzeMLMessages(testMessages);
+    console.log('🔬 Resultado de prueba:', testResult);
+    
+    if (isAnalyzing) {
+      console.log('⚠️ Análisis ya en progreso');
+      return;
+    }
+    
+    setIsAnalyzing(true);
+    
+    try {
+      // Simular tiempo de análisis
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const foundTags = [];
+      const updatedOrders = [...orders];
+      
+      console.log('🔍 Analizando mensajes por orden...');
+      
+      // Analizar cada orden que tiene mensajes simulados
+      Object.entries(mockMLMessages).forEach(([orderIndex, messages]) => {
+        const orderIdx = parseInt(orderIndex) - 1;
+        console.log(`📋 Analizando orden ${orderIndex} (índice ${orderIdx}):`, messages);
+        
+        if (updatedOrders[orderIdx]) {
+          const detectedTags = analyzeMLMessages(messages);
+          console.log(`🏷️ Etiquetas detectadas para orden ${orderIndex}:`, detectedTags);
+          
+          if (detectedTags.length > 0) {
+            // Agregar etiquetas detectadas a la orden
+            const existingTags = updatedOrders[orderIdx].tags || [];
+            const newTags = detectedTags.filter(tag => !existingTags.includes(tag));
+            
+            if (newTags.length > 0) {
+              updatedOrders[orderIdx].tags = [...existingTags, ...newTags];
+              foundTags.push(...newTags);
+              console.log(`✅ Agregadas ${newTags.length} nuevas etiquetas a orden ${orderIndex}`);
+            }
+          }
+        } else {
+          console.log(`❌ No se encontró orden en índice ${orderIdx}`);
+        }
+      });
+      
+      // Actualizar órdenes con nuevas etiquetas
+      setOrders(updatedOrders);
+      console.log('📦 Órdenes actualizadas con etiquetas');
+      
+      // Actualizar etiquetas encontradas en el último análisis (sin duplicados)
+      const uniqueFoundTags = [...new Set(foundTags)];
+      setLastAnalysisTags(uniqueFoundTags);
+      console.log('🎯 Etiquetas únicas encontradas:', uniqueFoundTags);
+      
+      // Mostrar automáticamente la barra con las etiquetas encontradas
+      if (uniqueFoundTags.length > 0) {
+        setShowIATags(true);
+        console.log('📊 Mostrando barra de etiquetas IA');
+      } else {
+        console.log('⚠️ No se detectaron etiquetas nuevas');
+      }
+      
+      console.log(`🤖 Análisis IA completado: ${uniqueFoundTags.length} tipos de etiquetas detectadas`);
+      
+    } catch (error) {
+      console.error('❌ Error en análisis IA:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // 🚀 SISTEMA DE ETIQUETAS AUTOMÁTICAS BASADO EN REGLAS DE NEGOCIO
+  const applyBusinessRules = (orders) => {
+    console.log('🔧 Aplicando reglas de negocio automáticas...');
+    
+    const updatedOrders = orders.map(order => {
+      const newTags = [...(order.tags || [])];
+      const today = new Date();
+      
+      // REGLA 1: Envío Crítico - más de 4 días desde la compra
+      if (order.purchaseDate) {
+        const purchaseDate = new Date(order.purchaseDate);
+        const daysDiff = Math.floor((today - purchaseDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff >= 4 && !newTags.includes('Envío Crítico')) {
+          newTags.push('Envío Crítico');
+          console.log(`🚨 Orden ${order.id}: Envío crítico (${daysDiff} días)`);
+        }
+      }
+      
+      // REGLA 2: Alto Valor - productos >$500
+      if (order.total && order.total > 500 && !newTags.includes('Alto Valor')) {
+        newTags.push('Alto Valor');
+        console.log(`💎 Orden ${order.id}: Alto valor ($${order.total})`);
+      }
+      
+      // REGLA 3: Cliente VIP - más de 10 órdenes previas
+      if (order.customer?.previousOrders && order.customer.previousOrders >= 10 && !newTags.includes('Cliente VIP')) {
+        newTags.push('Cliente VIP');
+        console.log(`👑 Orden ${order.id}: Cliente VIP (${order.customer.previousOrders} órdenes)`);
+      }
+      
+      // REGLA 4: Margen Bajo - menos del 15%
+      if (order.profitMargin && order.profitMargin < 15 && !newTags.includes('Margen Bajo')) {
+        newTags.push('Margen Bajo');
+        console.log(`📉 Orden ${order.id}: Margen bajo (${order.profitMargin}%)`);
+      }
+      
+      // REGLA 5: Producto Apple - requiere manejo especial
+      if (order.productTitle?.toLowerCase().includes('iphone') || 
+          order.productTitle?.toLowerCase().includes('macbook') ||
+          order.productTitle?.toLowerCase().includes('apple')) {
+        if (!newTags.includes('Apple Product')) {
+          newTags.push('Apple Product');
+          console.log(`🍎 Orden ${order.id}: Producto Apple`);
+        }
+      }
+      
+      // REGLA 6: Destino Internacional - requiere documentación
+      if (order.location?.country && 
+          !['COLOMBIA', 'colombia'].includes(order.location.country) && 
+          !newTags.includes('Internacional')) {
+        newTags.push('Internacional');
+        console.log(`🌍 Orden ${order.id}: Destino internacional (${order.location.country})`);
+      }
+      
+      return { ...order, tags: newTags };
+    });
+    
+    return updatedOrders;
+  };
+
+  // Función para aplicar reglas automáticas
+  const runBusinessRulesAnalysis = () => {
+    console.log('🔧 Iniciando análisis de reglas de negocio...');
+    const updatedOrders = applyBusinessRules(orders);
+    setOrders(updatedOrders);
+    
+    // Contar etiquetas aplicadas
+    const appliedTags = new Set();
+    updatedOrders.forEach(order => {
+      if (order.tags) {
+        order.tags.forEach(tag => appliedTags.add(tag));
+      }
+    });
+    
+    console.log(`✅ Reglas aplicadas: ${appliedTags.size} tipos de etiquetas automáticas`);
+  };
+
   // Debug: mostrar cambios en customTagColors
   useEffect(() => {
     console.log('🎨 customTagColors updated:', customTagColors);
@@ -259,7 +536,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         number: 'ORD-2025002',
         orderNumber: '2000012784807490',
         sku: 'B07XQXZXVZ',
-        productTitle: 'Zapatillas Nike Air Max Revolution 5 Para Hombre Running...',
+        productTitle: 'iPhone 15 Pro 256GB Space Black',
         productImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop',
         customer: {
           name: 'Carlos Mendoza',
@@ -268,20 +545,28 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           document: 'RUT 10.509.928-2',
           rating: 4.8,
           totalOrders: 12,
+          previousOrders: 15,
           avatar: '/api/placeholder/32/32',
           industry: 'Particular',
           conversionRate: 85,
           avgResponseTime: 2.3
         },
         amount: 129990,
+        total: 850,
+        profitMargin: 12.5,
         currency: 'COP',
         status: 'aprobado',
         shippingStatus: 'enviado',
         createdDate: '2025-01-14',
+        purchaseDate: '2025-01-20', // Hace 6 días - debería generar "Envío Crítico"
         lastActivity: '2025-01-22',
         validUntil: '2025-02-14',
         items: 2,
         minutesAgo: 45,
+        location: {
+          country: 'CHILE',
+          city: 'Santiago'
+        },
         orderStatus: {
           main: 'APROBADO',
           shipping: 'ENVIADO',
@@ -342,16 +627,20 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           document: 'DNI 42722765',
           rating: 4.5,
           totalOrders: 8,
+          previousOrders: 8,
           avatar: '/api/placeholder/32/32',
           industry: 'Fotografía',
           conversionRate: 92,
           avgResponseTime: 1.8
         },
         amount: 1850000,
+        total: 1850,
+        profitMargin: 8.5, // Margen bajo - debería generar etiqueta
         currency: 'COP',
         status: 'procesando',
         shippingStatus: 'pendiente',
         createdDate: '2025-01-13',
+        purchaseDate: '2025-01-22', // Hace 4 días - debería generar "Envío Crítico"
         lastActivity: '2025-01-23',
         validUntil: '2025-02-13',
         items: 5,
@@ -1708,7 +1997,11 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const totalPages = Math.ceil(allFilteredOrders.length / ordersPerPage);
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const filteredOrders = allFilteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  
+  // Filtrado normal sin IA
+  const sortedFilteredOrders = allFilteredOrders;
+    
+  const filteredOrders = sortedFilteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
 
   // Cambiar página
   const handlePageChange = (pageNumber) => {
@@ -1807,6 +2100,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
 
   return (
     <div className="space-y-6 mt-[10px] ml-[12px] mr-[12px]">
+
 
       {/* Métricas Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -1919,8 +2213,63 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           </button>
 
           {/* Contador de Resultados */}
-          <div className="text-sm text-gray-600 font-medium hidden sm:block">
+          <div className="text-sm text-gray-600 font-medium hidden sm:block flex-1">
             {allFilteredOrders.length} resultados
+          </div>
+
+          {/* Lado Derecho - Controles de Vista e Import/Export */}
+          <div className="flex items-center gap-1 ml-auto">
+            {/* Grid View */}
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded transition-colors duration-200 ${
+                viewMode === 'grid'
+                  ? 'text-blue-600 bg-blue-100'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Vista en cuadrícula"
+            >
+              <span className="block w-4 h-4 text-xs leading-none">⊞</span>
+            </button>
+
+            {/* List View */}
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded transition-colors duration-200 ${
+                viewMode === 'list'
+                  ? 'text-blue-600 bg-blue-100'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Vista en lista"
+            >
+              <span className="block w-4 h-4 text-xs leading-none">☰</span>
+            </button>
+
+            {/* Separador */}
+            <div className="w-px h-4 bg-gray-300 mx-1"></div>
+
+            {/* Importar */}
+            <button
+              onClick={() => handleOrderAction('import')}
+              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors duration-200"
+              title="Importar órdenes"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+
+            {/* Exportar */}
+            <button
+              onClick={() => handleOrderAction('export-selected')}
+              className={`p-1.5 rounded transition-colors duration-200 ${
+                selectedOrders.size > 0 
+                  ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-200' 
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              title={`Exportar ${selectedOrders.size > 0 ? `${selectedOrders.size} órdenes` : 'selecciona órdenes'}`}
+              disabled={selectedOrders.size === 0}
+            >
+              <Upload className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -2221,61 +2570,121 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
           )}
         </div>
 
-        {/* Lado Derecho - Controles Minimalistas */}
-        <div className="flex items-center gap-1">
-          
-          {/* Importar */}
-          <button
-            onClick={() => handleOrderAction('import')}
-            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors duration-200"
-            title="Importar órdenes"
-          >
-            <Download className="h-4 w-4" />
-          </button>
-
-          {/* Exportar */}
-          <button
-            onClick={() => handleOrderAction('export-selected')}
-            className={`p-1.5 rounded transition-colors duration-200 ${
-              selectedOrders.size > 0 
-                ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-200' 
-                : 'text-gray-300 cursor-not-allowed'
-            }`}
-            title={`Exportar ${selectedOrders.size > 0 ? `${selectedOrders.size} órdenes` : 'selecciona órdenes'}`}
-            disabled={selectedOrders.size === 0}
-          >
-            <Upload className="h-4 w-4" />
-          </button>
-
-          {/* Separador */}
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-
-          {/* Grid View */}
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded transition-colors duration-200 ${
-              viewMode === 'grid'
-                ? 'text-blue-600 bg-blue-100'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-            }`}
-            title="Vista en cuadrícula"
-          >
-            <span className="block w-4 h-4 text-xs leading-none">⊞</span>
-          </button>
-
-          {/* List View */}
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded transition-colors duration-200 ${
-              viewMode === 'list'
-                ? 'text-blue-600 bg-blue-100'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-            }`}
-            title="Vista en lista"
-          >
-            <span className="block w-4 h-4 text-xs leading-none">☰</span>
-          </button>
+        {/* Lado Derecho - Info de Selección */}
+        <div className="text-xs text-gray-500">
+          {selectedOrders.size > 0 && (
+            <span>{selectedOrders.size} de {allFilteredOrders.length} seleccionadas</span>
+          )}
         </div>
+      </div>
+
+      {/* Barra IA delgada */}
+      <div className="bg-white border border-gray-200 rounded-md px-4 py-2 mb-4 mt-1 flex items-center justify-between">
+          {/* Lado izquierdo - Etiquetas */}
+          <div className="flex items-center gap-2 flex-1">
+            {/* Placeholder text cuando no hay etiquetas */}
+            {!showIATags && selectedIATags.length === 0 && (
+              <span className="text-xs text-purple-600 italic">
+                Analizar mensajes de clientes con IA
+              </span>
+            )}
+          </div>
+
+          {/* Lado derecho - Botones IA */}
+          <div className="flex items-center gap-1">
+            {/* Botón Reglas Automáticas */}
+            <button
+              onClick={runBusinessRulesAnalysis}
+              className="p-1 rounded transition-all duration-200 hover:bg-green-100 text-green-600"
+              title="Aplicar reglas de negocio automáticas"
+            >
+              <Zap className="h-4 w-4" />
+            </button>
+            
+            {/* Botón Robot IA */}
+            <button
+              onClick={runIntelligentAnalysis}
+              className={`text-xl p-1 rounded transition-all duration-200 ${
+                isAnalyzing
+                  ? 'bg-blue-200 text-blue-700 shadow-sm animate-pulse'
+                  : showIATags || selectedIATags.length > 0 
+                    ? 'bg-purple-200 text-purple-700 shadow-sm' 
+                    : 'hover:bg-purple-100 text-purple-600'
+              }`}
+              title={isAnalyzing ? "Analizando mensajes ML..." : "Analizar mensajes con IA"}
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              ) : '🤖'}
+            </button>
+          </div>
+
+          {/* Etiquetas IA */}
+          {showIATags && (
+            <>
+              <div className="flex items-center gap-1 flex-wrap">
+                {lastAnalysisTags.map(tag => {
+                  // Contar cuántas órdenes tienen esta etiqueta
+                  const tagCount = orders.filter(order => order.tags?.includes(tag)).length;
+                  
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => toggleIATag(tag)}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        selectedIATags.includes(tag)
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'bg-white border border-purple-300 text-purple-700 hover:bg-purple-100'
+                      }`}
+                    >
+                      {tag} {tagCount}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Botón Limpiar */}
+              {selectedIATags.length > 0 && (
+                <button
+                  onClick={clearIAFilters}
+                  className="ml-auto px-2 py-0.5 bg-white border border-purple-300 text-purple-700 rounded text-xs font-medium hover:bg-purple-100 transition-colors duration-200"
+                >
+                  Limpiar
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Contador de filtros activos */}
+          {!showIATags && selectedIATags.length > 0 && (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-purple-700 font-medium">
+                {selectedIATags.length} filtros IA:
+              </span>
+              <div className="flex gap-1">
+                {selectedIATags.map(tag => {
+                  const tagCount = orders.filter(order => order.tags?.includes(tag)).length;
+                  return (
+                    <span key={tag} className="px-2 py-0.5 bg-purple-600 text-white rounded-full text-xs font-medium">
+                      {tag} {tagCount}
+                    </span>
+                  );
+                })}
+              </div>
+              <button
+                onClick={clearIAFilters}
+                className="ml-2 text-xs text-purple-700 hover:text-purple-900 underline"
+              >
+                Limpiar
+              </button>
+            </div>
+          )}
       </div>
 
       {/* Vista de órdenes - Grid o Lista */}
@@ -2298,6 +2707,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               key={order.id} 
               className={`bg-white rounded-lg shadow-sm p-4 md:p-5 hover:shadow-lg hover:bg-gray-50 transition-all duration-300 cursor-pointer relative ${getPriorityColor(order.priority)}`}
             >
+
               {/* Número de orden minimalista */}
               <div className="absolute top-3 left-3 bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
                 #{orderNumber}
@@ -2404,22 +2814,22 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               </div>
 
               {/* Panel Logístico arriba - Visual Tracker */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
-                <div className="flex items-center gap-1 mb-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-1.5 mb-2">
+                <div className="flex items-center gap-1 mb-1">
                   <Truck className="text-blue-600" size={12} />
-                  <span className="text-sm font-medium text-blue-700">Logística:</span>
+                  <span className="text-xs font-medium text-blue-700">Logística:</span>
                   
                   {/* Badges de Proveedores Logísticos */}
                   {/* Anicam - Colombia y Perú */}
                   {(order.location?.country === 'COLOMBIA' || order.location?.country === 'PERÚ') && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">
                       Anicam
                     </span>
                   )}
                   
                   {/* Chilexpress - Chile */}
                   {order.location?.country === 'CHILE' && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-900">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-900">
                       Chilexpress
                     </span>
                   )}
@@ -2427,10 +2837,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                   {/* Fallback para otros países o datos no disponibles */}
                   {(!order.location?.country || (order.location?.country !== 'COLOMBIA' && order.location?.country !== 'PERÚ' && order.location?.country !== 'CHILE')) && (
                     <div className="flex gap-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-800">
                         Anicam
                       </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-900">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-900">
                         Chilexpress
                       </span>
                     </div>
@@ -2441,42 +2851,42 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 <div className="hidden md:block">
                   <div className="flex items-center justify-between relative">
                     {/* Background Line */}
-                    <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-200"></div>
+                    <div className="absolute top-3 left-3 right-3 h-0.5 bg-gray-200"></div>
                     
                     {/* Active Progress Line - Based on current state */}
-                    <div className="absolute top-4 left-4 h-0.5 bg-blue-500" style={{width: '33%'}}></div>
+                    <div className="absolute top-3 left-3 h-0.5 bg-blue-500" style={{width: '33%'}}></div>
                     
                     {/* Status Icons and Labels */}
                     <div className="flex flex-col items-center relative z-10">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-1">
-                        <Package className="text-white" size={14} />
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mb-0.5">
+                        <Package className="text-white" size={12} />
                       </div>
-                      <span className="text-xs font-medium text-blue-600">Prealertado</span>
+                      <span className="text-[10px] font-medium text-blue-600">Prealertado</span>
                     </div>
                     
                     <div className="flex flex-col items-center relative z-10">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-1">
-                        <svg className="text-white" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mb-0.5">
+                        <svg className="text-white" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                         </svg>
                       </div>
-                      <span className="text-xs font-medium text-blue-600">En Miami</span>
+                      <span className="text-[10px] font-medium text-blue-600">En Miami</span>
                     </div>
                     
                     <div className="flex flex-col items-center relative z-10">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mb-1">
-                        <Truck className="text-gray-500" size={14} />
+                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mb-0.5">
+                        <Truck className="text-gray-500" size={12} />
                       </div>
-                      <span className="text-xs text-gray-500">En Ruta</span>
+                      <span className="text-[10px] text-gray-500">En Ruta</span>
                     </div>
                     
                     <div className="flex flex-col items-center relative z-10">
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mb-1">
-                        <svg className="text-gray-500" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center mb-0.5">
+                        <svg className="text-gray-500" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                         </svg>
                       </div>
-                      <span className="text-xs text-gray-500">Entregado</span>
+                      <span className="text-[10px] text-gray-500">Entregado</span>
                     </div>
                   </div>
                 </div>
@@ -2523,10 +2933,10 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               </div>
 
               {/* Grid inferior - Proveedor y Financiero */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 mb-3">
                 {/* Panel Proveedor - Optimizado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5">
-                  <div className="flex items-center justify-between mb-1.5">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1">
                       <Package className="text-purple-600" size={12} />
                       <span className="text-sm font-medium text-purple-700">Proveedor:</span>
@@ -2603,8 +3013,8 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
 
                 {/* Panel Financiero - Optimizado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5 relative">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1 relative">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1">
                       <DollarSign className="text-green-600" size={12} />
                       <span className="text-sm font-medium text-green-700">Financiero</span>
@@ -2673,7 +3083,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                   </div>
                   
                   {/* Utilidad principal centrada */}
-                  <div className="text-center mb-2">
+                  <div className="text-center mb-1">
                     <div className="inline-flex flex-col items-center">
                       <span className="text-xs text-gray-500 mb-0.5">Utilidad</span>
                       <span className="text-2xl font-bold text-green-600">{formatCurrency(45800)}</span>
@@ -2766,36 +3176,26 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
               </div>
 
-              {/* Panel de Gestión de Etiquetas */}
+              {/* Etiquetas en línea horizontal delgada */}
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Tag className="text-purple-600" size={14} />
-                    <span className="text-xs font-medium text-purple-700">Etiquetas</span>
+                    <span className="text-xs font-medium text-purple-700">Etiquetas:</span>
                   </div>
                   
-                  {/* Botón para agregar nueva etiqueta */}
-                  <button 
-                    className="p-1 text-purple-600 hover:bg-purple-100 rounded transition-colors"
-                    onClick={() => setShowTagCreatorModal(true)}
-                    title="Agregar etiqueta"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-                
-                {/* Etiquetas actuales de la orden */}
-                <div className="flex flex-wrap gap-1 mb-2">
+                  {/* Etiquetas en la misma línea */}
+                  <div className="flex flex-wrap gap-1 flex-1">
                   {order.tags && order.tags.length > 0 ? (
                     order.tags.map((tag, index) => (
                       <div key={index} className="flex items-center group">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${getTagColor(tag)}`}>
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-dashed border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400 transition-all cursor-pointer rounded-full">
                           {tag}
                           <button 
                             className="ml-1 text-current opacity-0 group-hover:opacity-100 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log(`Eliminar etiqueta: ${tag}`);
+                              removeTagFromOrder(order.id, tag);
                             }}
                             title={`Eliminar ${tag}`}
                           >
@@ -2807,26 +3207,19 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                   ) : (
                     <span className="text-xs text-gray-500 italic">Sin etiquetas asignadas</span>
                   )}
-                </div>
-                
-                {/* Sugerencias de etiquetas rápidas */}
-                <div className="border-t border-purple-100 pt-2">
-                  <div className="text-xs text-purple-600 mb-1 font-medium">Etiquetas sugeridas:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {['Urgente', 'VIP', 'Seguimiento', 'Problema'].map((suggestedTag) => (
-                      <button
-                        key={suggestedTag}
-                        onClick={() => console.log(`Agregar etiqueta sugerida: ${suggestedTag}`)}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-dashed border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400 transition-all"
-                        title={`Agregar ${suggestedTag}`}
-                      >
-                        <Plus className="h-2 w-2 mr-1" />
-                        {suggestedTag}
-                      </button>
-                    ))}
                   </div>
+                  
+                  {/* Botón para agregar nueva etiqueta al final de la línea */}
+                  <button 
+                    className="p-1 text-purple-600 hover:bg-purple-100 rounded transition-colors flex-shrink-0"
+                    onClick={() => setShowTagCreatorModal(true)}
+                    title="Agregar etiqueta"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
+
 
               {/* Acciones profesionales */}
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">

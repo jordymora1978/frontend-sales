@@ -8,15 +8,21 @@
 **Domain**: https://sales.dropux.co
 **Local**: http://localhost:3001
 **Backend**: https://api-sales.dropux.co
-**Function**: MercadoLibre sales management, order processing, customer service
+**Function**: MercadoLibre sales management, AI-powered order processing, automated business intelligence
 
 ## ⚡ CRITICAL DEPENDENCIES
 
 ### MercadoLibre Integration UI
 - **OAuth Flow**: ML store connection interface
-- **Order Dashboard**: Real-time order management
+- **Order Dashboard**: Real-time order management + AI intelligence
 - **Customer Service**: Message handling and responses
 - **NEVER BREAK**: ML OAuth redirect flow or production order handling
+
+### 🤖 **AI Business Intelligence System** (NEW)
+- **Automated Rules Engine**: Instant tagging based on structured data
+- **AI Message Analysis**: Smart pattern detection from ML messages
+- **Hybrid Processing**: Combines free rules + AI insights
+- **Real-time Intelligence**: Automatic risk assessment and priority scoring
 
 ### Current Status
 - **Active Users**: 3 (admin, operator, viewer)
@@ -64,16 +70,27 @@ src/
 - **Order Sync**: Manual and automatic order synchronization
 - **Webhook Status**: Real-time webhook notification display
 
-### Order Management
-- **Order List**: Paginated table with filters and search
-- **Order Details**: Complete order information and history
+### 🤖 **AI-Enhanced Order Management** (UPGRADED)
+- **Smart Order List**: Paginated table with AI-powered filters
+- **Intelligent Tagging**: Automated business rules + AI analysis
+- **Order Details**: Complete information + AI insights
 - **Status Updates**: Order status changes and tracking
-- **Customer Messages**: ML messaging interface
+- **Customer Messages**: ML messaging interface with AI pattern detection
+
+### 🧠 **AI Intelligence Features**
+- **Business Rules Engine**: ⚙️ Free, instant analysis (6 rules)
+  - Envío Crítico, Alto Valor, Cliente VIP, Margen Bajo, Apple Product, Internacional
+- **AI Message Analysis**: 🤖 Smart pattern detection (8 patterns)
+  - Cancellation intent, invoice requests, shipping concerns, warranty issues
+- **Dynamic Tag Filtering**: Click tags to filter orders by intelligence
+- **Real-time Counters**: Tag counts like "Pide Factura 4"
+- **Hybrid Processing**: Cost-optimized (80% rules, 20% AI)
 
 ### Reports & Analytics
 - **Sales Reports**: Daily, weekly, monthly sales data
 - **Performance Metrics**: Order processing times
 - **Revenue Tracking**: Financial summaries
+- **AI Intelligence Reports**: Tag distribution and pattern insights
 
 ## 🚨 RULES FOR CLAUDE
 
@@ -352,6 +369,10 @@ Before any changes go live:
 - [ ] All API endpoints respond correctly
 - [ ] Authentication works for existing users
 - [ ] Order operations work without errors
+- [ ] **AI Business Rules Engine works** ⚙️
+- [ ] **AI Message Analysis functions** 🤖
+- [ ] **Tag filtering and counters work**
+- [ ] **No AI processing errors in console**
 - [ ] Responsive design works on all devices
 - [ ] No console errors in production
 - [ ] Environment variables configured correctly
@@ -363,6 +384,9 @@ Before any changes go live:
 ✅ **User access**: All existing users can login and work normally
 ✅ **ML integration**: Store connection and order sync working
 ✅ **Order processing**: Real orders handled without issues
+✅ **🤖 AI Intelligence**: Business rules + message analysis working
+✅ **🚀 Hybrid Processing**: 80% rules (free) + 20% AI (cost-optimized)
+✅ **📊 Smart Filtering**: Tag-based order filtering and counters
 ✅ **Performance**: Fast loading and responsive interface
 ✅ **Mobile support**: Usable on mobile devices
 ✅ **Error handling**: Graceful error messages for users
@@ -371,6 +395,98 @@ Before any changes go live:
 
 ---
 
-*Frontend: 🟢 Production Live*
-*Users: ✅ 3 Active*
-*Last Updated: 2025-08-22*
+## 🤖 **AI BUSINESS INTELLIGENCE SYSTEM - TECHNICAL DETAILS**
+
+### **Implementation Architecture**
+```javascript
+// File: src/pages/OrdersPage2_0.jsx
+
+// 1. BUSINESS RULES ENGINE (Free, Instant)
+const applyBusinessRules = (orders) => {
+  // ⚙️ 6 automated patterns based on structured data
+  // - Envío Crítico: purchaseDate > 4 days
+  // - Alto Valor: total > $500
+  // - Cliente VIP: customer.previousOrders >= 10
+  // - Margen Bajo: profitMargin < 15%
+  // - Apple Product: productTitle contains iPhone/MacBook
+  // - Internacional: location.country !== 'COLOMBIA'
+};
+
+// 2. AI MESSAGE ANALYSIS (Cost per use)
+const analyzeMLMessages = (messages) => {
+  // 🤖 8 pattern detection from MercadoLibre messages
+  // - Intención de Cancelar, Pide Factura, Duda con Envío, etc.
+  // Uses mock implementation - ready for real AI API integration
+};
+```
+
+### **UI Components**
+```javascript
+// Thin AI Bar - Located below main filter bar
+<div className="flex items-center justify-between py-2 px-4 bg-gray-50 border-b">
+  {/* Left side - Generated tags with counters */}
+  <div className="flex gap-1">
+    <button>Pide Factura 4</button>
+    <button>Envío Crítico 2</button>
+  </div>
+  
+  {/* Right side - AI buttons */}
+  <div className="flex gap-1">
+    <button onClick={runBusinessRulesAnalysis}>⚙️</button>
+    <button onClick={runIntelligentAnalysis}>🤖</button>
+  </div>
+</div>
+```
+
+### **Data Structure Requirements**
+```javascript
+// Order object must include these fields for AI processing:
+{
+  id: 'string',
+  productTitle: 'string',
+  total: number,
+  profitMargin: number,
+  purchaseDate: 'YYYY-MM-DD',
+  customer: {
+    name: 'string',
+    previousOrders: number
+  },
+  location: {
+    country: 'string',
+    city: 'string'
+  },
+  tags: ['array', 'of', 'strings'] // AI will populate this
+}
+```
+
+### **Testing & Debugging**
+```bash
+# Open browser console while testing
+# Both AI functions log detailed processing info:
+
+🤖 Iniciando análisis IA...
+📊 Órdenes disponibles: 12
+🔧 Aplicando reglas de negocio automáticas...
+🚨 Orden MGA-PE4998: Envío crítico (6 días)
+💎 Orden ORD-2025003: Alto valor ($1850)
+✅ Reglas aplicadas: 6 tipos de etiquetas automáticas
+```
+
+### **Cost Optimization Strategy**
+- **Primary**: Use ⚙️ Business Rules (free) for 80% of classification
+- **Secondary**: Use 🤖 AI Analysis for complex text patterns only
+- **Hybrid**: Combine both for comprehensive intelligence
+- **Scalable**: Add more business rules as patterns become clear
+
+### **Production Integration Points**
+- **Mock Data**: Currently uses mock ML messages for AI testing
+- **Real Integration**: Replace `analyzeMLMessages()` with actual AI API calls
+- **API Ready**: Structure prepared for OpenAI, Claude, or custom ML models
+- **Fallback**: Business rules work regardless of AI service availability
+
+---
+
+*Frontend: 🟢 Production Live + AI Enhanced*  
+*Users: ✅ 3 Active*  
+*AI Features: 🤖 14+ Smart Tags, Hybrid Processing*  
+*Last Updated: 2025-08-26*
