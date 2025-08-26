@@ -9,17 +9,17 @@
   --header-border: #e5e7eb;
   --header-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   
-  /* Primary Colors */
-  --primary-50: #eff6ff;
-  --primary-100: #dbeafe;
-  --primary-200: #bfdbfe;
-  --primary-300: #93c5fd;
-  --primary-400: #60a5fa;
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
-  --primary-800: #1e40af;
-  --primary-900: #1e3a8a;
+  /* Primary Colors - Morados/Purple para el logo */
+  --primary-50: #faf5ff;
+  --primary-100: #f3e8ff;
+  --primary-200: #e9d5ff;
+  --primary-300: #d8b4fe;
+  --primary-400: #c084fc;
+  --primary-500: #a855f7;
+  --primary-600: #9333ea;
+  --primary-700: #7c3aed;
+  --primary-800: #6b21a8;
+  --primary-900: #581c87;
   
   /* Neutral Colors */
   --gray-50: #f9fafb;
@@ -78,17 +78,17 @@
   --header-border: #374151;
   --header-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   
-  /* Primary Colors */
-  --primary-50: #1e3a8a;
-  --primary-100: #1e40af;
-  --primary-200: #1d4ed8;
-  --primary-300: #2563eb;
-  --primary-400: #3b82f6;
-  --primary-500: #60a5fa;
-  --primary-600: #93c5fd;
-  --primary-700: #bfdbfe;
-  --primary-800: #dbeafe;
-  --primary-900: #eff6ff;
+  /* Primary Colors - Morados/Purple para el logo */
+  --primary-50: #581c87;
+  --primary-100: #6b21a8;
+  --primary-200: #7c3aed;
+  --primary-300: #9333ea;
+  --primary-400: #a855f7;
+  --primary-500: #c084fc;
+  --primary-600: #d8b4fe;
+  --primary-700: #e9d5ff;
+  --primary-800: #f3e8ff;
+  --primary-900: #faf5ff;
   
   /* Neutral Colors */
   --gray-50: #111827;
@@ -150,8 +150,11 @@
   box-sizing: border-box;
 }
 
+/* Import Inter font for whole app */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   background: var(--bg-secondary);
   color: var(--text-primary);
   transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -249,7 +252,7 @@ body {
   align-items: center;
   justify-content: flex-start; /* Alineado a la izquierda */
   margin-bottom: 0; /* Sin margen inferior */
-  margin-left: 10px; /* 2px más hacia la derecha (8px + 2px) */
+  margin-left: 20px; /* Movido más hacia la derecha */
 }
 
 .collapsed .logo-container {
@@ -267,7 +270,7 @@ body {
   height: 40px;
   color: var(--primary-500);
   animation: sparkle 3s ease-in-out infinite;
-  margin-left: -4px; /* Mover la caja 4px hacia la izquierda */
+  margin-left: -8px; /* Mover la caja más hacia la izquierda */
 }
 
 .logo-text {

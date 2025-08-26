@@ -25,7 +25,9 @@ import {
   Sparkles,
   RefreshCw,
   Cloud,
-  Truck
+  Truck,
+  Tag,
+  Key
 } from 'lucide-react';
 import './PremiumSidebar.css';
 
@@ -143,8 +145,8 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
           
           <div className="logo-container">
             <div className="logo-wrapper">
-              <Package className="logo-icon" />
-              {!isCollapsed && <span className="logo-text">Dropux Pro</span>}
+              <Package className="logo-icon text-purple-600" />
+              {!isCollapsed && <span className="logo-text text-purple-800 font-semibold">Dropux Pro</span>}
             </div>
           </div>
 
@@ -309,6 +311,26 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
                     <div className="item-content">
                       <RefreshCw className="item-icon" size={16} />
                       <span className="item-name">Sincronizar Órdenes</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/apis-conexiones"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Key className="item-icon" size={16} />
+                      <span className="item-name">APIs y Conexiones</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/mis-etiquetas"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Tag className="item-icon" size={16} />
+                      <span className="item-name">Mis Etiquetas</span>
                     </div>
                   </Link>
                 </div>

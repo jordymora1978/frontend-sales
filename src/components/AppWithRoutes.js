@@ -17,6 +17,8 @@ import ReportesPage from '../pages/control/ReportesPage';
 import GmailDrivePage from '../pages/control/GmailDrivePage';
 import GoogleAPI from '../pages/GoogleAPI';
 import ConnectMLStore from './ConnectMLStore';
+import MisEtiquetas from '../pages/MisEtiquetas';
+import APIsConexiones from '../pages/APIsConexiones';
 
 const AppWithRoutes = () => {
   const [showMobileMenu, setShowMobileMenu] = React.useState(false);
@@ -90,6 +92,8 @@ const AppWithRoutes = () => {
               <Route path="/control-trm" element={<TRMPage />} />
               <Route path="/control-reportes" element={<ReportesPage />} />
               <Route path="/control-gmail-drive" element={<GmailDrivePage />} />
+              <Route path="/mis-etiquetas" element={<MisEtiquetas />} />
+              <Route path="/apis-conexiones" element={<APIsConexiones />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>

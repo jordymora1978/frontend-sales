@@ -65,6 +65,9 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
   const [selectedOrders, setSelectedOrders] = useState(new Set());
   const [financeExpanded, setFinanceExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showAmazonOrderModal, setShowAmazonOrderModal] = useState(false);
+  const [selectedOrderForAmazon, setSelectedOrderForAmazon] = useState(null);
+  const [tempAmazonOrders, setTempAmazonOrders] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // grid or list
   const [orderPopup, setOrderPopup] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -371,7 +374,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
     { name: 'pink', label: 'Rosa', classes: 'bg-pink-50 text-pink-700 border-pink-200' },
     { name: 'indigo', label: 'Índigo', classes: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     { name: 'gray', label: 'Gris', classes: 'bg-gray-50 text-gray-700 border-gray-200' },
-    { name: 'orange', label: 'Naranja', classes: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { name: 'yellow', label: 'Amarillo', classes: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
     { name: 'teal', label: 'Verde azulado', classes: 'bg-teal-50 text-teal-700 border-teal-200' }
   ];
 
@@ -381,12 +384,12 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
     'Premium': 'bg-blue-50 text-blue-700 border-blue-200',
     'Amazon': 'bg-purple-50 text-purple-700 border-purple-200',
     'Nuevo': 'bg-green-50 text-green-700 border-green-200',
-    'Descuento': 'bg-orange-50 text-orange-700 border-orange-200',
+    'Descuento': 'bg-yellow-50 text-yellow-700 border-yellow-200',
     'Express': 'bg-indigo-50 text-indigo-700 border-indigo-200',
     'Mayorista': 'bg-cyan-50 text-cyan-700 border-cyan-200',
     'Reembolso': 'bg-pink-50 text-pink-700 border-pink-200',
     'Aventura': 'bg-teal-50 text-teal-700 border-teal-200',
-    'Tecnología': 'bg-slate-50 text-slate-700 border-slate-200',
+    'Tecnología': 'bg-blue-50 text-blue-700 border-blue-200',
     'Apple': 'bg-gray-50 text-gray-700 border-gray-200',
     'GoPro': 'bg-gray-50 text-gray-700 border-gray-200',
     'Dyson': 'bg-gray-50 text-gray-700 border-gray-200',
@@ -454,13 +457,13 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
     aprobado: { label: 'Aprobado', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
     procesando: { label: 'Procesando', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: XCircle },
-    mediacion: { label: 'Mediación', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
+    mediacion: { label: 'Mediación', color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
     pendiente: { label: 'Pendiente', color: 'bg-gray-100 text-gray-800', icon: Clock }
   };
 
   // Estados de envío (Estado del Envío Local)
   const shippingStatuses = {
-    pendiente: { label: 'Pendiente', color: 'bg-slate-100 text-slate-700', icon: Clock },
+    pendiente: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700', icon: Clock },
     enviado: { label: 'Enviado', color: 'bg-blue-100 text-blue-700', icon: Truck },
     entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 }
   };
@@ -2072,6 +2075,81 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
     }
   };
 
+  // Funciones para manejo de órdenes de Amazon
+  const handleAddAmazonOrder = (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    setSelectedOrderForAmazon(order);
+    setTempAmazonOrders(order?.amazonOrders || []);
+    setShowAmazonOrderModal(true);
+  };
+
+  const handleAddNewAmazonOrder = () => {
+    const newOrder = {
+      id: Date.now(),
+      orderNumber: '',
+      isPrimary: tempAmazonOrders.length === 0,
+      createdAt: new Date().toISOString()
+    };
+    setTempAmazonOrders([...tempAmazonOrders, newOrder]);
+  };
+
+  const handleUpdateAmazonOrder = (id, orderNumber) => {
+    setTempAmazonOrders(prev => 
+      prev.map(order => 
+        order.id === id ? {...order, orderNumber} : order
+      )
+    );
+  };
+
+  const handleSetPrimaryOrder = (id) => {
+    setTempAmazonOrders(prev => 
+      prev.map(order => ({
+        ...order,
+        isPrimary: order.id === id
+      }))
+    );
+  };
+
+  const handleRemoveAmazonOrder = (id) => {
+    setTempAmazonOrders(prev => {
+      const filtered = prev.filter(order => order.id !== id);
+      // Si eliminamos la principal, hacer la primera como principal
+      if (filtered.length > 0 && !filtered.some(o => o.isPrimary)) {
+        filtered[0].isPrimary = true;
+      }
+      return filtered;
+    });
+  };
+
+  const handleSaveAmazonOrders = () => {
+    // Actualizar la orden con las nuevas órdenes de Amazon
+    console.log('Guardando órdenes:', tempAmazonOrders);
+    // Simular actualización de la orden con las nuevas órdenes
+    const updatedOrders = orders.map(order => 
+      order.id === selectedOrderForAmazon.id 
+        ? {
+            ...order, 
+            amazonOrders: tempAmazonOrders.filter(ao => ao.orderNumber.trim()),
+            amazonOrderId: tempAmazonOrders.find(o => o.isPrimary)?.orderNumber
+          }
+        : order
+    );
+    console.log('Orden actualizada:', updatedOrders.find(o => o.id === selectedOrderForAmazon.id));
+    
+    setShowAmazonOrderModal(false);
+    setSelectedOrderForAmazon(null);
+    setTempAmazonOrders([]);
+  };
+
+  const handlePackageClick = (amazonOrderId) => {
+    if (amazonOrderId) {
+      const amazonUrl = `https://www.amazon.com/gp/your-account/order-details?orderID=${amazonOrderId}`;
+      window.open(amazonUrl, '_blank');
+    } else {
+      console.log('No hay número de orden de Amazon asignado');
+    }
+  };
+
   // Acciones de orden
   const handleOrderAction = (action, orderId) => {
     console.log(`Acción ${action} en orden ${orderId}`);
@@ -2108,7 +2186,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
+              <div className="p-3 bg-blue-50 rounded-lg">
                 <ShoppingCart className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
@@ -2127,7 +2205,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
+              <div className="p-3 bg-green-50 rounded-lg">
                 <DollarSign className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
@@ -2148,7 +2226,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
+              <div className="p-3 bg-purple-50 rounded-lg">
                 <CheckCircle2 className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
@@ -2169,13 +2247,13 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Timer className="h-6 w-6 text-orange-600" />
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <Timer className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Tiempo Procesamiento</p>
                 <p className="text-2xl font-bold text-gray-900">3.2 días</p>
-                <p className="text-xs text-orange-600 flex items-center mt-1">
+                <p className="text-xs text-yellow-600 flex items-center mt-1">
                   <Clock className="h-3 w-3 mr-1" />
                   Promedio histórico
                 </p>
@@ -2716,7 +2794,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
               {/* OPCIÓN 4: Layout de Tarjetas Pequeñas */}
               <div className="mb-4">
                 {/* Header único con producto e info principal */}
-                <div className="bg-slate-50 border border-slate-200 rounded-t-lg p-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-t-lg p-3">
                   <div className="flex items-start space-x-3">
                     {/* Checkbox de selección */}
                     <label className="flex items-center mt-1">
@@ -2776,7 +2854,7 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                           {/* ID y Order Number en la misma línea */}
                           <div className="text-xs mt-1">
                             <div className="flex items-center">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                                 {order.id}
                               </span>
                               <span className="ml-2 text-gray-500">Order # </span>
@@ -2934,179 +3012,122 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
 
               {/* Grid inferior - Proveedor y Financiero */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 mb-3">
-                {/* Panel Proveedor - Optimizado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      <Package className="text-purple-600" size={12} />
-                      <span className="text-sm font-medium text-purple-700">Proveedor:</span>
-                      
-                      {/* Ícono Amazon más grande */}
-                      <svg width="18" height="18" viewBox="0 0 48 48">
-                        <path fill="#FFB300" d="M39.6,39c-4.2,3.1-10.5,5-15.6,5c-7.3,0-13.8-2.9-18.8-7.4c-0.4-0.4,0-0.8,0.4-0.6c5.4,3.1,11.5,4.9,18.3,4.9c4.6,0,10.4-1,15.1-3C39.7,37.7,40.3,38.5,39.6,39z M41.1,36.9c-0.5-0.7-3.5-0.3-4.8-0.2c-0.4,0-0.5-0.3-0.1-0.6c2.3-1.7,6.2-1.2,6.6-0.6c0.4,0.6-0.1,4.5-2.3,6.3c-0.3,0.3-0.7,0.1-0.5-0.2C40.5,40.4,41.6,37.6,41.1,36.9z"/>
-                        <path fill="#37474F" d="M36.9,29.8c-1-1.3-2-2.4-2-4.9v-8.3c0-3.5,0-6.6-2.5-9c-2-1.9-5.3-2.6-7.9-2.6C19,5,14.2,7.2,13,13.4c-0.1,0.7,0.4,1,0.8,1.1l5.1,0.6c0.5,0,0.8-0.5,0.9-1c0.4-2.1,2.1-3.1,4.1-3.1c1.1,0,3.2,0.6,3.2,3v3c-3.2,0-6.6,0-9.4,1.2c-3.3,1.4-5.6,4.3-5.6,8.6c0,5.5,3.4,8.2,7.8,8.2c3.7,0,5.9-0.9,8.8-3.8c0.9,1.4,1.3,2.2,3,3.7c0.4,0.2,0.9,0.2,1.2-0.1l0,0c1-0.9,2.9-2.6,4-3.5C37.4,30.9,37.3,30.3,36.9,29.8z M27,22.1L27,22.1c0,2-0.1,6.9-5,6.9c-3,0-3-3-3-3c0-4.5,4.2-5,8-5V22.1z"/>
-                      </svg>
-                    </div>
-                    <button
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
-                      onClick={() => handleOrderAction('edit-provider', order.id)}
-                      title="Editar información del proveedor"
+                {/* Panel Proveedor - Minimalista */}
+                <div className="bg-white rounded-lg border border-gray-200 p-3 relative">
+                  {/* Botón + para agregar orden - Esquina superior derecha */}
+                  <div className="absolute top-2 right-2">
+                    <button 
+                      onClick={() => handleAddAmazonOrder(order.id)}
+                      className="p-1 hover:bg-blue-100 rounded-full transition-colors"
+                      title="Agregar número de orden de Amazon"
                     >
-                      <Settings className="text-gray-600" size={12} />
+                      <Plus 
+                        size={12} 
+                        className="text-blue-500 hover:text-blue-600" 
+                      />
                     </button>
                   </div>
                   
-                  {/* IconCards v1.2 - Optimizado */}
-                  <div className="grid grid-cols-2 gap-1">
-                    {/* SKU Card */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
-                      <div className="text-purple-500 mb-0.5 flex justify-center">
-                        <BarChart3 size={12} />
+                  <div className="flex items-center justify-between pr-8">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-lg cursor-pointer ${
+                        (order.amazonOrders && order.amazonOrders.length > 0) ? 'bg-green-50' : 'bg-orange-50'
+                      }`} onClick={() => {
+                        const primaryOrder = order.amazonOrders?.find(ao => ao.isPrimary);
+                        handlePackageClick(primaryOrder?.orderNumber);
+                      }}>
+                        <Package className={`h-4 w-4 ${
+                          (order.amazonOrders && order.amazonOrders.length > 0) ? 'text-green-600' : 'text-orange-600'
+                        }`} />
                       </div>
-                      <a 
-                        href={`https://www.amazon.com/dp/${order.sku}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-purple-600 hover:text-purple-800 block break-all"
-                        title="Ver en Amazon"
-                      >
-                        {order.sku || 'B07XQXZXVZ'}
-                      </a>
-                    </div>
-
-                    {/* Peso Card */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
-                      <div className="text-purple-500 mb-0.5 flex justify-center">
-                        <Weight size={12} />
-                      </div>
-                      <div className="text-xs font-bold text-purple-600">
-                        {order.weightLbs || '1.1 lbs'}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Amazon : B07IJK456</p>
+                        <p className="text-xs text-gray-600">12 Agosto 2025</p>
                       </div>
                     </div>
-
-                    {/* Estado Card */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
-                      <div className="text-purple-500 mb-0.5 flex justify-center">
-                        <CheckCircle size={12} />
-                      </div>
-                      <div className="text-xs font-bold text-purple-600">
-                        Comprado
-                      </div>
-                    </div>
-
-                    {/* Orden Card */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center border border-gray-100 hover:border-purple-200 transition-colors">
-                      <div className="text-purple-500 mb-0.5 flex justify-center">
-                        <FileText size={12} />
-                      </div>
-                      <a 
-                        href={`https://www.amazon.com/gp/your-account/order-details?orderID=${order.orderNumber || '113-1539294-1662622'}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-purple-600 hover:text-purple-800 font-mono block"
-                        title={`Ver orden completa: ${order.orderNumber || '113-1539294-1662622'}`}
-                      >
-                        ...{(order.orderNumber || '113-1539294-1662622').slice(-5)}
-                      </a>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">$12.97</p>
+                      <p className="text-xs text-gray-600">{order.weightLbs || '1.1 lbs'}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Panel Financiero - Optimizado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-1 relative">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="text-green-600" size={12} />
-                      <span className="text-sm font-medium text-green-700">Financiero</span>
-                    </div>
+                {/* Panel Financiero - Minimalista */}
+                <div className="bg-white rounded-lg border border-gray-200 p-3 relative">
+                  {/* Info icon with tooltip - Esquina superior derecha */}
+                  <div className="absolute top-2 right-2">
+                    <button 
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                      onClick={() => setShowTooltip(!showTooltip)}
+                      className="p-1 hover:bg-blue-100 rounded-full transition-colors"
+                    >
+                      <Info 
+                        size={12} 
+                        className="text-blue-500 hover:text-blue-600" 
+                      />
+                    </button>
                     
-                    {/* Info icon with tooltip */}
-                    <div className="relative">
-                      <button 
-                        onMouseEnter={() => setShowTooltip(true)}
-                        onMouseLeave={() => setShowTooltip(false)}
-                        onClick={() => setShowTooltip(!showTooltip)}
-                        className="p-1 hover:bg-blue-100 rounded-full transition-colors"
-                      >
-                        <Info 
-                          size={12} 
-                          className="text-blue-500 hover:text-blue-600" 
-                        />
-                      </button>
-                      
-                      {/* Tooltip */}
-                      {showTooltip && (
-                        <div className="absolute right-0 top-6 z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 animate-in fade-in-0 zoom-in-95 duration-200">
-                          {/* Tooltip Arrow */}
-                          <div className="absolute -top-1 right-3 w-2 h-2 bg-white border-l border-t border-gray-200 rotate-45"></div>
+                    {/* Tooltip */}
+                    {showTooltip && (
+                      <div className="absolute right-0 top-6 z-50 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 animate-in fade-in-0 zoom-in-95 duration-200">
+                        {/* Tooltip Arrow */}
+                        <div className="absolute -top-1 right-3 w-2 h-2 bg-white border-l border-t border-gray-200 rotate-45"></div>
+                        
+                        <div className="text-xs font-semibold text-gray-700 mb-2">Desglose Financiero</div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-gray-600">💰 Precio producto</span>
+                            <span className="text-xs font-medium text-gray-700">{formatCurrency(150000)}</span>
+                          </div>
                           
-                          <div className="text-xs font-semibold text-gray-700 mb-2">Desglose Financiero</div>
-                          <div className="space-y-1">
+                          <div className="border-l-2 border-red-200 pl-2 space-y-0.5 ml-1">
                             <div className="flex justify-between">
-                              <span className="text-xs text-gray-600">💰 Precio producto</span>
-                              <span className="text-xs font-medium text-gray-700">{formatCurrency(150000)}</span>
+                              <span className="text-xs text-gray-500">📊 Cargos venta</span>
+                              <span className="text-xs text-red-600">-{formatCurrency(18000)}</span>
                             </div>
-                            
-                            <div className="border-l-2 border-red-200 pl-2 space-y-0.5 ml-1">
-                              <div className="flex justify-between">
-                                <span className="text-xs text-gray-500">📊 Cargos venta</span>
-                                <span className="text-xs text-red-600">-{formatCurrency(18000)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-xs text-gray-500">📦 Envío local</span>
-                                <span className="text-xs text-red-600">-{formatCurrency(5000)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-xs text-gray-500">🏛️ Impuestos</span>
-                                <span className="text-xs text-red-600">-{formatCurrency(2200)}</span>
-                              </div>
-                              <div className="flex justify-between border-t border-gray-100 pt-0.5">
-                                <span className="text-xs font-medium text-gray-600">💸 Subtotal</span>
-                                <span className="text-xs font-medium text-gray-700">{formatCurrency(124800)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-xs text-gray-500">✈️ Cargos int.</span>
-                                <span className="text-xs text-red-600">-{formatCurrency(79000)}</span>
-                              </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-500">📦 Envío local</span>
+                              <span className="text-xs text-red-600">-{formatCurrency(5000)}</span>
                             </div>
-                            
-                            <div className="bg-green-50 rounded-md p-1.5 mt-2 border border-green-200">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-semibold text-green-700">💚 Utilidad Final</span>
-                                <span className="text-xs font-bold text-green-600">{formatCurrency(45800)} (30%)</span>
-                              </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-500">🏛️ Impuestos</span>
+                              <span className="text-xs text-red-600">-{formatCurrency(2200)}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-gray-100 pt-0.5">
+                              <span className="text-xs font-medium text-gray-600">💸 Subtotal</span>
+                              <span className="text-xs font-medium text-gray-700">{formatCurrency(124800)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-500">✈️ Cargos int.</span>
+                              <span className="text-xs text-red-600">-{formatCurrency(79000)}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-green-50 rounded-md p-1.5 mt-2 border border-green-200">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-semibold text-green-700">💚 Utilidad Final</span>
+                              <span className="text-xs font-bold text-green-600">{formatCurrency(45800)} (30%)</span>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   
-                  {/* Utilidad principal centrada */}
-                  <div className="text-center mb-1">
-                    <div className="inline-flex flex-col items-center">
-                      <span className="text-xs text-gray-500 mb-0.5">Utilidad</span>
-                      <span className="text-2xl font-bold text-green-600">{formatCurrency(45800)}</span>
-                      <span className="text-xs text-green-500 font-medium">30% margen</span>
-                    </div>
-                  </div>
-                  
-                  {/* Grid de 2 valores importantes */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {/* Neto */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-gray-500 mb-0.5">Neto</span>
-                        <span className="text-sm font-semibold text-gray-700">{formatCurrency(124800)}</span>
+                  <div className="flex items-center justify-between pr-8">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-green-50 rounded-lg">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Utilidad</p>
+                        <p className="text-xs text-gray-600">{formatCurrency(45800)} (30%)</p>
                       </div>
                     </div>
-                    
-                    {/* Total Cargos */}
-                    <div className="bg-slate-50 rounded-md p-1.5 text-center">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-gray-500 mb-0.5">Cargos</span>
-                        <span className="text-sm font-semibold text-gray-600">-{formatCurrency(79000)}</span>
-                      </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">{formatCurrency(124800)}</p>
+                      <p className="text-xs text-gray-600">Neto</p>
                     </div>
                   </div>
                 </div>
@@ -3528,6 +3549,129 @@ const OrdersPage2_0 = ({ onOpenModal, onSelectOrder }) => {
                 </div>
               ) : null;
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Órdenes Amazon - Empresarial */}
+      {showAmazonOrderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Órdenes Amazon</h3>
+                <button
+                  onClick={() => setShowAmazonOrderModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Gestiona las órdenes de compra para este producto</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-4">
+              {/* Lista de órdenes */}
+              <div className="space-y-3 mb-4">
+                {tempAmazonOrders.map((amazonOrder, index) => (
+                  <div key={amazonOrder.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      {/* Badge de prioridad */}
+                      <div className={`px-2 py-1 rounded text-xs font-medium ${
+                        amazonOrder.isPrimary 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {amazonOrder.isPrimary ? 'Principal' : `#${index + 1}`}
+                      </div>
+                      
+                      {/* Input de número de orden */}
+                      <input
+                        type="text"
+                        value={amazonOrder.orderNumber}
+                        onChange={(e) => handleUpdateAmazonOrder(amazonOrder.id, e.target.value)}
+                        placeholder="113-7676721-8816259"
+                        className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      
+                      {/* Link clickeable si tiene número */}
+                      {amazonOrder.orderNumber.trim() && (
+                        <a
+                          href={`https://www.amazon.com/gp/your-account/order-details?orderID=${amazonOrder.orderNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                          title="Ver orden en Amazon"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                      
+                      {/* Acciones */}
+                      <div className="flex gap-1">
+                        {!amazonOrder.isPrimary && (
+                          <button
+                            onClick={() => handleSetPrimaryOrder(amazonOrder.id)}
+                            className="p-1 hover:bg-blue-100 rounded text-blue-600" 
+                            title="Marcar como principal"
+                          >
+                            <Star size={14} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleRemoveAmazonOrder(amazonOrder.id)}
+                          className="p-1 hover:bg-red-100 rounded text-red-600"
+                          title="Eliminar orden"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Botón agregar nueva orden */}
+                <button
+                  onClick={handleAddNewAmazonOrder}
+                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  <Plus size={16} className="inline mr-2" />
+                  Agregar nueva orden
+                </button>
+              </div>
+
+              {/* Info */}
+              {tempAmazonOrders.length > 0 && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-blue-700">
+                    📍 La orden <strong>Principal</strong> será la que abra Amazon al hacer clic en la caja.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowAmazonOrderModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveAmazonOrders}
+                disabled={!tempAmazonOrders.some(o => o.orderNumber.trim())}
+                className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  tempAmazonOrders.some(o => o.orderNumber.trim())
+                    ? 'text-white bg-blue-600 hover:bg-blue-700'
+                    : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                }`}
+              >
+                Guardar Órdenes
+              </button>
+            </div>
           </div>
         </div>
       )}
