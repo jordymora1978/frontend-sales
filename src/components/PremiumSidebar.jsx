@@ -24,7 +24,8 @@ import {
   Activity,
   Sparkles,
   RefreshCw,
-  Cloud
+  Cloud,
+  Truck
 } from 'lucide-react';
 import './PremiumSidebar.css';
 
@@ -57,7 +58,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const location = useLocation();
   const activeTab = location.pathname.replace('/', '') || 'dashboard';
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState(new Set(['control']));
+  const [expandedItems, setExpandedItems] = useState(new Set());
   const [hoveredItem, setHoveredItem] = useState(null);
   const [internalIsMobile, setInternalIsMobile] = useState(false);
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
@@ -90,7 +91,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     { id: 'orders2_0', name: 'Mis Ventas', icon: ShoppingBag, badge: null, path: '/orders2_0' },
     { id: 'customers', name: 'Mis Clientes', icon: Users, badge: null, path: '/customers' },
     { id: 'control-reportes', name: 'Mis Reportes', icon: TrendingUp, badge: null, path: '/control-reportes' },
-    { id: 'quotes', name: 'Mis Cotizaciones', icon: FileText, badge: '3', path: '/quotes' }
+    { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3', path: '/quotes' }
   ];
 
   const toggleExpanded = (itemId) => {
@@ -378,6 +379,56 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
                     <div className="item-content">
                       <Cloud className="item-icon" size={16} />
                       <span className="item-name">Google API</span>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              <button
+                className={`nav-item nav-group ${
+                  expandedItems.has('products') ? 'expanded' : ''
+                }`}
+                onClick={() => toggleExpanded('products')}
+              >
+                <div className="item-content">
+                  <Package className="item-icon" size={18} />
+                  <span className="item-name">Products Suit</span>
+                  <ChevronRight className={`expand-icon ${
+                    expandedItems.has('products') ? 'expanded' : ''
+                  }`} size={14} />
+                </div>
+              </button>
+              
+              {expandedItems.has('products') && (
+                <div className="sub-items">
+                  <Link 
+                    to="/catalogo-amazon"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Package className="item-icon" size={16} />
+                      <span className="item-name">Catálogo Amazon</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/publicaciones-ml"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <ShoppingBag className="item-icon" size={16} />
+                      <span className="item-name">Publicaciones ML</span>
+                    </div>
+                  </Link>
+                  <Link 
+                    to="/stock-proveedores"
+                    className="nav-item sub-item"
+                    onClick={handleItemClick}
+                  >
+                    <div className="item-content">
+                      <Truck className="item-icon" size={16} />
+                      <span className="item-name">Stock Proveedores</span>
                     </div>
                   </Link>
                 </div>

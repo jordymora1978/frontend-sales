@@ -4,6 +4,9 @@ import PremiumSidebar, { ThemeProvider as PremiumThemeProvider } from './Premium
 import PremiumHeader from './PremiumHeader';
 import OrdersPage2_0 from '../pages/OrdersPage2_0';
 import CustomersPage from '../pages/CustomersPage';
+import CatalogoAmazon from '../pages/CatalogoAmazon';
+import PublicacionesML from '../pages/PublicacionesML';
+import StockProveedores from '../pages/StockProveedores';
 import QuotesPageComponent from './QuotesPage';
 import SalesDashboardPage from '../pages/SalesDashboardPage';
 import SincOrdersMeli from '../pages/SincOrdersMeli';
@@ -60,6 +63,9 @@ const AppWithRoutes = () => {
               <Route path="/orders2_0" element={<OrdersPage2_0 />} />
               <Route path="/quotes" element={<QuotesPageComponent />} />
               <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/catalogo-amazon" element={<CatalogoAmazon />} />
+              <Route path="/publicaciones-ml" element={<PublicacionesML />} />
+              <Route path="/stock-proveedores" element={<StockProveedores />} />
               <Route path="/ml-stores" element={
                 <div className="ml-stores-page p-6">
                   <div className="flex justify-between items-center mb-6">
