@@ -60,10 +60,5 @@
       "permanent": true
     }
   ],
-  "regions": ["iad1"],
-  "functions": {
-    "app/**/*.js": {
-      "maxDuration": 30
-    }
-  }
+  "regions": ["iad1"]
 }
