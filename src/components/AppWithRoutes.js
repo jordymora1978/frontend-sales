@@ -19,6 +19,10 @@ import GoogleAPI from '../pages/GoogleAPI';
 import ConnectMLStore from './ConnectMLStore';
 import MisEtiquetas from '../pages/MisEtiquetas';
 import APIsConexiones from '../pages/APIsConexiones';
+import MLStoresPage from '../pages/MLStoresPage';
+import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminUsers from '../pages/admin/AdminUsers';
+import AdminSystem from '../pages/admin/AdminSystem';
 
 const AppWithRoutes = () => {
   const [showMobileMenu, setShowMobileMenu] = React.useState(false);
@@ -69,21 +73,10 @@ const AppWithRoutes = () => {
               <Route path="/publicaciones-ml" element={<PublicacionesML />} />
               <Route path="/stock-proveedores" element={<StockProveedores />} />
               <Route path="/ml-stores" element={
-                <div className="ml-stores-page p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-800">Tiendas MercadoLibre</h1>
-                      <p className="text-gray-600">Gestiona tus conexiones con MercadoLibre</p>
-                    </div>
-                    <button 
-                      onClick={() => setShowConnectML(true)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Conectar Tienda
-                    </button>
-                  </div>
-                  <p className="text-gray-500">No hay tiendas conectadas</p>
-                </div>
+                <MLStoresPage 
+                  showConnectML={showConnectML}
+                  setShowConnectML={setShowConnectML}
+                />
               } />
               <Route path="/ml-sync" element={<SincOrdersMeli />} />
               <Route path="/google-api" element={<GoogleAPI />} />
@@ -94,6 +87,9 @@ const AppWithRoutes = () => {
               <Route path="/control-gmail-drive" element={<GmailDrivePage />} />
               <Route path="/mis-etiquetas" element={<MisEtiquetas />} />
               <Route path="/apis-conexiones" element={<APIsConexiones />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/system" element={<AdminSystem />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>

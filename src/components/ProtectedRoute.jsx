@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children, requiredPermission = 'read' }) => {
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   // Check permissions if specified

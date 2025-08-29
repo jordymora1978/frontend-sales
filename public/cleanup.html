@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropux - Limpieza de Sistema</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border: 1px solid #ffeeba;
+        }
+        .btn {
+            padding: 1rem 2rem;
+            margin: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .credentials {
+            background: #f0f0f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+        .credentials h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .credentials code {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: block;
+            margin: 0.5rem 0;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Dropux - Sistema de Limpieza</h1>
+        
+        <div class="warning">
+            ⚠️ <strong>ADVERTENCIA:</strong> Esta página limpiará todos los datos de sesión almacenados localmente.
+        </div>
+
+        <div class="credentials">
+            <h3>📝 Credenciales de Admin:</h3>
+            <code>Email: admin@dropux.co</code>
+            <code>Password: admin123</code>
+        </div>
+
+        <h2>Opciones de Limpieza:</h2>
+        
+        <button class="btn btn-danger" onclick="cleanupAll()">
+            🗑️ Limpiar Todo (Nuclear)
+        </button>
+        
+        <button class="btn btn-primary" onclick="cleanupAuth()">
+            🔐 Limpiar Solo Autenticación
+        </button>
+        
+        <button class="btn btn-success" onclick="goToLogin()">
+            🚀 Ir al Login
+        </button>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        function cleanupAll() {
+            console.log('🗑️ Iniciando limpieza completa...');
+            
+            // Limpiar localStorage
+            localStorage.clear();
+            console.log('✅ localStorage limpiado');
+            
+            // Limpiar sessionStorage
+            sessionStorage.clear();
+            console.log('✅ sessionStorage limpiado');
+            
+            // Limpiar cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            console.log('✅ Cookies limpiadas');
+            
+            // Limpiar IndexedDB
+            if (window.indexedDB) {
+                indexedDB.databases().then(databases => {
+                    databases.forEach(db => {
+                        indexedDB.deleteDatabase(db.name);
+                    });
+                    console.log('✅ IndexedDB limpiado');
+                }).catch(e => console.warn('No se pudo limpiar IndexedDB:', e));
+            }
+            
+            showStatus('success', '✅ Limpieza completa realizada. Redirigiendo al login en 3 segundos...');
+            
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 3000);
+        }
+        
+        function cleanupAuth() {
+            console.log('🔐 Limpiando datos de autenticación...');
+            
+            const authKeys = [
+                'auth_token',
+                'refresh_token',
+                'user_data',
+                'user_permissions',
+                'auth_expires_at',
+                'ml_tokens',
+                'sso_token',
+                'dropux_auth',
+                'dropux_user'
+            ];
+            
+            authKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    console.log(`✅ Eliminado: ${key}`);
+                }
+            });
+            
+            // También limpiar sessionStorage
+            authKeys.forEach(key => {
+                if (sessionStorage.getItem(key)) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+            
+            showStatus('success', '✅ Datos de autenticación limpiados. Redirigiendo al login en 3 segundos...');
+            
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 3000);
+        }
+        
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+        
+        function showStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status ' + type;
+            statusEl.innerHTML = message;
+        }
+        
+        // Auto-detectar problemas
+        window.onload = function() {
+            console.log('🔍 Detectando estado del sistema...');
+            
+            const hasToken = localStorage.getItem('auth_token');
+            const hasUser = localStorage.getItem('user_data');
+            
+            if (hasToken || hasUser) {
+                console.log('⚠️ Se detectaron datos de sesión antiguos');
+                showStatus('error', '⚠️ Se detectaron datos de sesión. Usa los botones para limpiar.');
+            } else {
+                console.log('✅ Sistema limpio');
+            }
+            
+            // Mostrar todos los items en localStorage
+            console.log('📦 Items en localStorage:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                console.log(`  - ${key}: ${localStorage.getItem(key)?.substring(0, 50)}...`);
+            }
+        }
+    </script>
+</body>
+</html>

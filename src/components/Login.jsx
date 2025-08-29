@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DropuxLogo from './DropuxLogo';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onShowRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error, setError } = useAuth();
@@ -23,11 +24,15 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-96">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 p-4">
+      {/* Logo fuera de la caja blanca, en el fondo morado */}
+      <DropuxLogo className="mb-6" />
+      
+      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Dropux Sales</h1>
-          <p className="text-gray-600 mt-2">Sistema de Ventas</p>
+          {/* Updated welcome message */}
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">¡Bienvenidos!</h1>
+          <p className="text-gray-600">Ingresa tus datos para iniciar sesión</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -41,7 +46,7 @@ const Login = ({ onLogin }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:border-blue-500"
+                className="pl-10 pr-3 py-2.5 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
                 placeholder="admin@dropux.co"
                 required
               />
@@ -58,7 +63,7 @@ const Login = ({ onLogin }) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:border-blue-500"
+                className="pl-10 pr-3 py-2.5 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
                 placeholder="••••••••"
                 required
               />
@@ -75,15 +80,20 @@ const Login = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 font-semibold"
+            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-2.5 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-200 font-semibold text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Iniciando...' : 'Iniciar Sesión'}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Credenciales de prueba:</p>
-          <p className="font-mono mt-1">admin@dropux.co / Admin123!</p>
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={onShowRegister}
+            className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+          >
+            ¿No tienes cuenta? Regístrate aquí
+          </button>
         </div>
       </div>
     </div>

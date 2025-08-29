@@ -4,8 +4,10 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+// Use real auth service for production
+// import authService from '../services/mockAuthService';
 import authService from '../services/authService';
-import ssoManager from '../utils/ssoManager';
+// import ssoManager from '../utils/ssoManager';
 
 const AuthContext = createContext(null);
 
@@ -39,17 +41,15 @@ export const AuthProvider = ({ children }) => {
       if (token && userData) {
         try {
           const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
           
-          // Try to get fresh user data in background
-          try {
-            const currentUser = await authService.getCurrentUser();
-            if (currentUser) {
-              setUser(currentUser);
-            }
-          } catch (apiError) {
-            console.warn('Failed to refresh user data:', apiError);
-            // Keep using cached user data
+          // Validate token is not expired and user data is valid
+          const currentUser = await authService.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            // Token is invalid, clear everything
+            localStorage.clear();
+            setUser(null);
           }
         } catch (parseError) {
           console.error('Failed to parse user data:', parseError);
@@ -73,7 +73,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const userData = await authService.login(email, password);
+      const response = await authService.login(email, password);
+      const userData = response.user || response;
       setUser(userData);
       
       return userData;
@@ -92,10 +93,18 @@ export const AuthProvider = ({ children }) => {
       await authService.logout();
       setUser(null);
       setError(null);
+      // Clear all localStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      // Redirect to login
+      window.location.href = '/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
       // Even if logout API fails, clear local state
       setUser(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/auth/login';
     } finally {
       setLoading(false);
     }
@@ -123,7 +132,8 @@ export const AuthProvider = ({ children }) => {
 
   // Calculate authentication status based on context state
   const isAuthenticated = useMemo(() => {
-    return !loading && !!user && !!localStorage.getItem('auth_token');
+    // Only authenticated if we have a valid user object
+    return !loading && !!user && !!user.id && !!user.email;
   }, [loading, user]);
 
   const value = {

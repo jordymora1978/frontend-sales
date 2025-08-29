@@ -27,9 +27,12 @@ import {
   Cloud,
   Truck,
   Tag,
-  Key
+  Key,
+  Shield,
+  Crown
 } from 'lucide-react';
 import './PremiumSidebar.css';
+import { useAuth } from '../context/AuthContext';
 
 // Theme Context para manejo profesional
 export const ThemeContext = createContext();
@@ -65,6 +68,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const [internalIsMobile, setInternalIsMobile] = useState(false);
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
   const { theme, toggleTheme } = useContext(ThemeContext) || {};
+  const { user, logout } = useAuth();
 
   // Use props if provided, otherwise use internal state
   const effectiveIsMobile = isMobile !== undefined ? isMobile : internalIsMobile;
@@ -271,6 +275,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             ))}
           </div>
 
+
           {/* Bottom Section */}
           {!isCollapsed && (
             <div className="nav-section nav-bottom">
@@ -466,6 +471,47 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
               {/* Theme toggle removido - solo se usa en el header */}
             </div>
           )}
+
+          {/* SUPER ADMIN Section - Solo para SUPER_ADMIN */}
+          {!isCollapsed && user?.roles?.includes('SUPER_ADMIN') && (
+            <div className="nav-section nav-bottom">
+              <div className="section-label">SUPER ADMIN</div>
+              
+              <Link 
+                to="/admin"
+                className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
+                onClick={handleItemClick}
+              >
+                <div className="item-content">
+                  <Shield className="item-icon" size={18} />
+                  <span className="item-name">Panel Admin</span>
+                  <Crown className="item-badge badge-new" size={14} />
+                </div>
+              </Link>
+
+              <Link 
+                to="/admin/users"
+                className={`nav-item ${activeTab === 'admin/users' ? 'active' : ''}`}
+                onClick={handleItemClick}
+              >
+                <div className="item-content">
+                  <User className="item-icon" size={18} />
+                  <span className="item-name">Gestionar Usuarios</span>
+                </div>
+              </Link>
+
+              <Link 
+                to="/admin/system"
+                className={`nav-item ${activeTab === 'admin/system' ? 'active' : ''}`}
+                onClick={handleItemClick}
+              >
+                <div className="item-content">
+                  <Activity className="item-icon" size={18} />
+                  <span className="item-name">Monitor Sistema</span>
+                </div>
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Sidebar Footer */}
@@ -481,7 +527,11 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
               </div>
             )}
             {!isCollapsed && (
-              <button className="logout-btn" title="Cerrar sesión">
+              <button 
+                className="logout-btn" 
+                title="Cerrar sesión"
+                onClick={logout}
+              >
                 <LogOut size={16} />
               </button>
             )}

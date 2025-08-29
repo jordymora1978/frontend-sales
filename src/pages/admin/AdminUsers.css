@@ -1,0 +1,443 @@
+/* Admin Users - Gestión de Usuarios */
+
+.admin-users {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header */
+.admin-users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.admin-users-header h1 {
+    color: #1e293b;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-users-header p {
+    color: #64748b;
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+}
+
+/* Filters */
+.users-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.search-box {
+    flex: 1;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.role-filter {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+}
+
+.users-stats {
+    display: flex;
+    gap: 1rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Table */
+.users-table-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table th {
+    background: #f8fafc;
+    padding: 1.5rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.users-table td {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.users-table tr:hover {
+    background: #f8fafc;
+}
+
+.users-table tr.inactive {
+    opacity: 0.6;
+}
+
+/* User Info */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.user-email {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+/* Badges */
+.role-badge, .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-badge.role-super-admin {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+}
+
+.role-badge.role-client-admin {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+}
+
+.role-badge.role-employee {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.status-badge.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.status-badge.inactive {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* Actions */
+.user-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.btn-action.edit {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.btn-action.edit:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-action.deactivate {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.btn-action.deactivate:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-action.activate {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.btn-action.activate:hover {
+    background: rgba(16, 185, 129, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 2rem 1rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #64748b;
+}
+
+/* Form */
+.edit-user-form {
+    padding: 2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group.checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group.checkbox label {
+    margin-bottom: 0;
+    margin-left: 0.5rem;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input[type="checkbox"] {
+    width: auto;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-users {
+        padding: 1rem;
+    }
+
+    .admin-users-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .users-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .users-stats {
+        justify-content: center;
+    }
+
+    .users-table-container {
+        overflow-x: auto;
+    }
+
+    .users-table {
+        min-width: 700px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+}

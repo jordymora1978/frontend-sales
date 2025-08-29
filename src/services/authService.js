@@ -266,6 +266,56 @@ class AuthService {
   }
 
   /**
+   * Register a new user
+   */
+  async register(userData) {
+    try {
+      const response = await axios.post(`${AUTH_API_URL}/auth/register`, {
+        email: userData.email,
+        password: userData.password,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        country: userData.country || 'Colombia',
+        phone: userData.phone,
+        company: userData.company || ''
+      });
+
+      return {
+        success: true,
+        data: response.data,
+        message: response.data.message || 'Registro exitoso. Tu cuenta será revisada por un administrador.'
+      };
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      let errorMessage = 'Error al registrar usuario';
+      
+      if (error.response?.data) {
+        const { data, status } = error.response;
+        
+        if (status === 400) {
+          if (data.detail) {
+            errorMessage = typeof data.detail === 'string' ? data.detail : 'Datos de registro inválidos';
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        } else if (status === 409) {
+          errorMessage = 'Este email ya está registrado';
+        } else if (status >= 500) {
+          errorMessage = 'Error del servidor, intente nuevamente';
+        }
+      } else if (error.request) {
+        errorMessage = 'Error de conexión, verifique su internet';
+      }
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
    * Make authenticated API call to Sales API
    */
   async apiCall(endpoint, options = {}) {

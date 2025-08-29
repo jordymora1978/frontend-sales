@@ -26,8 +26,8 @@ const getAPIConfig = () => {
     return PRODUCTION_CONFIG;
   }
 
-  // For local development with explicit override
-  if (isDevelopment && process.env.REACT_APP_USE_LOCAL_API === 'true') {
+  // For local development - force local API
+  if (isDevelopment) {
     console.log('🔧 DEVELOPMENT MODE: Using local API URLs');
     return DEVELOPMENT_CONFIG;
   }

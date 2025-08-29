@@ -11,6 +11,7 @@ import {
   Menu
 } from 'lucide-react';
 import { ThemeContext } from './PremiumSidebar';
+import { useAuth } from '../context/AuthContext';
 import './PremiumHeader.css';
 
 const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
@@ -18,6 +19,7 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const themeContext = useContext(ThemeContext);
   const { theme, toggleTheme } = themeContext || {};
+  const { user, logout } = useAuth();
 
   // Funciones de breadcrumb eliminadas - ya no se usan
 
@@ -118,8 +120,8 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
                   <User size={16} />
                 </div>
                 <div className="user-info">
-                  <div className="user-name">John Doe</div>
-                  <div className="user-role">Administrador</div>
+                  <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
+                  <div className="user-role">{user?.roles?.[0] || 'Sin rol'}</div>
                 </div>
                 <ChevronDown size={14} className={`chevron ${showUserMenu ? 'rotated' : ''}`} />
               </button>
@@ -137,9 +139,9 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
                         <User size={20} />
                       </div>
                       <div className="user-details">
-                        <div className="user-name">John Doe</div>
-                        <div className="user-email">john@dropux.co</div>
-                        <div className="user-role">Administrador</div>
+                        <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
+                        <div className="user-email">{user?.email || 'No email'}</div>
+                        <div className="user-role">{user?.roles?.[0] || 'Sin rol'}</div>
                       </div>
                     </div>
                     
@@ -157,7 +159,7 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
                         <span>Ayuda y soporte</span>
                       </button>
                       <div className="dropdown-separator" />
-                      <button className="dropdown-item danger">
+                      <button className="dropdown-item danger" onClick={logout}>
                         <LogOut size={16} />
                         <span>Cerrar sesión</span>
                       </button>

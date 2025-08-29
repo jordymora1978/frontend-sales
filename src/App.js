@@ -1,8 +1,10 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppWithRoutes from './components/AppWithRoutes';
-import Login from './components/Login';
+import Login from './components/Login.jsx';
+import EnterpriseRegister from './components/EnterpriseRegister.jsx';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 const LoadingScreen = () => (
@@ -14,8 +16,10 @@ const LoadingScreen = () => (
   </div>
 );
 
-const AuthenticatedLogin = () => {
+const AuthenticatedAuth = () => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   if (loading) {
     return <LoadingScreen />;
@@ -25,7 +29,17 @@ const AuthenticatedLogin = () => {
     return <Navigate to="/" replace />;
   }
   
-  return <Login />;
+  // Show register form
+  if (location.pathname === '/auth/register' || location.pathname === '/register') {
+    return (
+      <EnterpriseRegister 
+        onBackToLogin={() => navigate('/auth/login')}
+      />
+    );
+  }
+  
+  // Show login form (default)
+  return <Login onShowRegister={() => navigate('/auth/register')} />;
 };
 
 const AppRoutes = () => {
@@ -33,10 +47,20 @@ const AppRoutes = () => {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/login" element={<AuthenticatedLogin />} />
+          {/* Authentication routes - both old and new for compatibility */}
+          <Route path="/auth/login" element={<AuthenticatedAuth />} />
+          <Route path="/auth/register" element={<AuthenticatedAuth />} />
+          {/* Legacy routes - redirect to new structure */}
+          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/register" element={<Navigate to="/auth/register" replace />} />
+          {/* Protected application routes */}
           <Route 
             path="/*" 
-            element={<AppWithRoutes />} 
+            element={
+              <ProtectedRoute>
+                <AppWithRoutes />
+              </ProtectedRoute>
+            } 
           />
         </Routes>
       </div>
