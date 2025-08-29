@@ -19,6 +19,7 @@ const DEVELOPMENT_CONFIG = {
 const getAPIConfig = () => {
   // Force production URLs for deployed environments
   if (typeof window !== 'undefined' && (
+    window.location.hostname === 'app.dropux.co' ||
     window.location.hostname === 'sales.dropux.co' ||
     window.location.hostname.includes('vercel.app')
   )) {
