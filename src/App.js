@@ -5,7 +5,6 @@ import AppWithRoutes from './components/AppWithRoutes';
 import Login from './components/Login.jsx';
 import EnterpriseRegister from './components/EnterpriseRegister.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
-import DebugClearAuth from './components/DebugClearAuth';
 import './App.css';
 
 const LoadingScreen = () => (
@@ -73,7 +72,6 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
-      {window.location.hostname.includes('dropux.co') && <DebugClearAuth />}
     </AuthProvider>
   );
 }
