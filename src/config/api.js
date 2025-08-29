@@ -17,23 +17,24 @@ const DEVELOPMENT_CONFIG = {
 
 // Override logic: Use production by default, only use development if explicitly set
 const getAPIConfig = () => {
-  // Force production URLs for deployed environments
+  // ALWAYS use production URLs for deployed environments (regardless of NODE_ENV)
   if (typeof window !== 'undefined' && (
     window.location.hostname === 'app.dropux.co' ||
     window.location.hostname === 'sales.dropux.co' ||
     window.location.hostname.includes('vercel.app')
   )) {
-    console.log('🚀 PRODUCTION MODE: Using production API URLs');
+    console.log('🚀 PRODUCTION MODE: Using production API URLs - hostname:', window.location.hostname);
+    console.log('AUTH_API_URL:', PRODUCTION_CONFIG.AUTH_API_URL);
     return PRODUCTION_CONFIG;
   }
 
-  // For local development - force local API
-  if (isDevelopment) {
+  // ONLY use development URLs for localhost
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     console.log('🔧 DEVELOPMENT MODE: Using local API URLs');
     return DEVELOPMENT_CONFIG;
   }
 
-  // Default to production
+  // Default to production for any other case
   console.log('✅ DEFAULT MODE: Using production API URLs');
   return PRODUCTION_CONFIG;
 };
