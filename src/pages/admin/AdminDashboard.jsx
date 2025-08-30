@@ -13,8 +13,8 @@ const AdminDashboard = () => {
     const [recentActivity, setRecentActivity] = useState([]);
 
     useEffect(() => {
-        // Verificar que es SUPER_ADMIN
-        if (!user?.roles?.includes('SUPER_ADMIN')) {
+        // Verificar que es super_admin
+        if (!user?.roles?.includes('super_admin')) {
             return;
         }
         
@@ -64,7 +64,7 @@ const AdminDashboard = () => {
     };
 
     // Verificar permisos
-    if (!user?.roles?.includes('SUPER_ADMIN')) {
+    if (!user?.roles?.includes('super_admin')) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>

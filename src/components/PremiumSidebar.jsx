@@ -68,7 +68,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const [internalIsMobile, setInternalIsMobile] = useState(false);
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
   const { theme, toggleTheme } = useContext(ThemeContext) || {};
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
 
   // Use props if provided, otherwise use internal state
   const effectiveIsMobile = isMobile !== undefined ? isMobile : internalIsMobile;
@@ -472,8 +472,8 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             </div>
           )}
 
-          {/* SUPER ADMIN Section - Solo para SUPER_ADMIN */}
-          {!isCollapsed && user?.roles?.includes('SUPER_ADMIN') && (
+          {/* SUPER ADMIN Section - Solo para super_admin */}
+          {!isCollapsed && user?.roles?.includes('super_admin') && (
             <div className="nav-section nav-bottom">
               <div className="section-label">SUPER ADMIN</div>
               
@@ -522,8 +522,8 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             </div>
             {!isCollapsed && (
               <div className="user-info">
-                <div className="user-name">John Doe</div>
-                <div className="user-role">Administrador</div>
+                <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
+                <div className="user-role">{user?.roles?.includes('super_admin') ? 'Super Admin' : 'Usuario'}</div>
               </div>
             )}
             {!isCollapsed && (

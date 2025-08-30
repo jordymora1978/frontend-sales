@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [roleFilter, setRoleFilter] = useState('all');
 
     useEffect(() => {
-        if (!user?.roles?.includes('SUPER_ADMIN')) {
+        if (!user?.roles?.includes('super_admin')) {
             return;
         }
         fetchUsers();
@@ -41,7 +41,7 @@ const AdminUsers = () => {
                         country: 'Colombia',
                         phone: null,
                         company: null,
-                        roles: ['SUPER_ADMIN'],
+                        roles: ['super_admin'],
                         is_active: true,
                         created_at: '2024-01-15T00:00:00',
                         last_login: '2025-08-28T10:30:00'
@@ -92,13 +92,13 @@ const AdminUsers = () => {
     };
 
     const getRoleColor = (roles) => {
-        if (roles.includes('SUPER_ADMIN')) return 'role-super-admin';
+        if (roles.includes('super_admin')) return 'role-super-admin';
         if (roles.includes('CLIENT_ADMIN')) return 'role-client-admin';
         return 'role-employee';
     };
 
     const getRoleLabel = (roles) => {
-        if (roles.includes('SUPER_ADMIN')) return 'Super Admin';
+        if (roles.includes('super_admin')) return 'Super Admin';
         if (roles.includes('CLIENT_ADMIN')) return 'Admin Cliente';
         return 'Empleado';
     };
@@ -113,7 +113,7 @@ const AdminUsers = () => {
     });
 
     // Verificar permisos
-    if (!user?.roles?.includes('SUPER_ADMIN')) {
+    if (!user?.roles?.includes('super_admin')) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>
@@ -152,7 +152,7 @@ const AdminUsers = () => {
                     className="role-filter"
                 >
                     <option value="all">Todos los roles</option>
-                    <option value="SUPER_ADMIN">Super Admin</option>
+                    <option value="super_admin">Super Admin</option>
                     <option value="CLIENT_ADMIN">Admin Cliente</option>
                     <option value="EMPLOYEE">Empleado</option>
                 </select>
@@ -316,7 +316,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                         >
                             <option value="EMPLOYEE">Empleado</option>
                             <option value="CLIENT_ADMIN">Admin Cliente</option>
-                            <option value="SUPER_ADMIN">Super Admin</option>
+                            <option value="super_admin">Super Admin</option>
                         </select>
                     </div>
                     

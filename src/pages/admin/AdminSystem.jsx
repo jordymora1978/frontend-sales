@@ -14,7 +14,7 @@ const AdminSystem = () => {
     const [refreshInterval, setRefreshInterval] = useState(null);
 
     useEffect(() => {
-        if (!user?.roles?.includes('SUPER_ADMIN')) {
+        if (!user?.roles?.includes('super_admin')) {
             return;
         }
         
@@ -179,7 +179,7 @@ const AdminSystem = () => {
     };
 
     // Verificar permisos
-    if (!user?.roles?.includes('SUPER_ADMIN')) {
+    if (!user?.roles?.includes('super_admin')) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>
