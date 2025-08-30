@@ -15,6 +15,7 @@ import passwordService from '../services/passwordService';
 import authService from '../services/authService';
 import DropuxLogo from './DropuxLogo';
 import VerificationModal from './VerificationModal';
+import RegistrationSuccess from './RegistrationSuccess';
 import { AUTH_API_URL } from '../config/api';
 import 'react-phone-number-input/style.css';
 
@@ -38,6 +39,12 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
   const [countryCode, setCountryCode] = useState('CO');
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
+
+  const handleContinueToLogin = () => {
+    if (onBackToLogin) {
+      onBackToLogin();
+    }
+  };
 
   // Auto-detect location on component mount
   useEffect(() => {
@@ -229,28 +236,15 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
         const loginData = await loginResponse.json();
         
         if (loginResponse.ok) {
-          // Save token and user data
-          localStorage.setItem('access_token', loginData.access_token);
-          localStorage.setItem('user', JSON.stringify(loginData.user));
-          
+          // Clear form and show success screen
           setShowVerificationModal(false);
           setSuccess(true);
-          
-          // Redirect to dashboard
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 2000);
           
           return { success: true };
         } else {
           // Registration successful but login failed - rare case
           setShowVerificationModal(false);
           setSuccess(true);
-          if (onRegisterSuccess) {
-            setTimeout(() => {
-              onRegisterSuccess();
-            }, 3000);
-          }
           return { success: true };
         }
       } else {
@@ -309,6 +303,16 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
     const labels = ['Muy débil', 'Débil', 'Moderada', 'Fuerte', 'Muy fuerte'];
     return labels[passwordStrength.score] || '';
   };
+
+  // Show success screen if registration completed
+  if (success) {
+    return (
+      <RegistrationSuccess 
+        userEmail={formData.email}
+        onContinueToLogin={handleContinueToLogin}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 p-4">
