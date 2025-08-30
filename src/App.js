@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AppWithRoutes from './components/AppWithRoutes';
 import Login from './components/Login.jsx';
 import EnterpriseRegister from './components/EnterpriseRegister.jsx';
+import ForgotPassword from './components/ForgotPassword.jsx';
+import ResetPassword from './components/ResetPassword.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -38,8 +40,27 @@ const AuthenticatedAuth = () => {
     );
   }
   
+  // Show forgot password form
+  if (location.pathname === '/auth/forgot-password' || location.pathname === '/forgot-password') {
+    return (
+      <ForgotPassword 
+        onBackToLogin={() => navigate('/auth/login')}
+      />
+    );
+  }
+  
+  // Show reset password form
+  if (location.pathname === '/auth/reset-password' || location.pathname === '/reset-password') {
+    return <ResetPassword />;
+  }
+  
   // Show login form (default)
-  return <Login onShowRegister={() => navigate('/auth/register')} />;
+  return (
+    <Login 
+      onShowRegister={() => navigate('/auth/register')}
+      onShowForgotPassword={() => navigate('/auth/forgot-password')}
+    />
+  );
 };
 
 const AppRoutes = () => {
@@ -50,9 +71,13 @@ const AppRoutes = () => {
           {/* Authentication routes - both old and new for compatibility */}
           <Route path="/auth/login" element={<AuthenticatedAuth />} />
           <Route path="/auth/register" element={<AuthenticatedAuth />} />
+          <Route path="/auth/forgot-password" element={<AuthenticatedAuth />} />
+          <Route path="/auth/reset-password" element={<AuthenticatedAuth />} />
           {/* Legacy routes - redirect to new structure */}
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
+          <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
           {/* Protected application routes */}
           <Route 
             path="/*" 

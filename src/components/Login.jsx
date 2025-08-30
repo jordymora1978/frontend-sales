@@ -3,7 +3,7 @@ import { User, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DropuxLogo from './DropuxLogo';
 
-const Login = ({ onLogin, onShowRegister }) => {
+const Login = ({ onLogin, onShowRegister, onShowForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error, setError } = useAuth();
@@ -67,6 +67,16 @@ const Login = ({ onLogin, onShowRegister }) => {
                 placeholder="••••••••"
                 required
               />
+            </div>
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={onShowForgotPassword}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
           </div>
 
