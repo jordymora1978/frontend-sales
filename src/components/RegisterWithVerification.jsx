@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { AUTH_API_URL } from '../config/api';
+import RegistrationSuccess from './RegistrationSuccess';
 
 const RegisterWithVerification = ({ onBackToLogin }) => {
   const navigate = useNavigate();
@@ -221,21 +222,11 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
           // Update auth context
           login(loginData.user, loginData.access_token);
           
-          // Show success message briefly
+          // Show success screen
           setStep(3);
-          setMessage('¡Registro exitoso! Ingresando al sistema...');
-          
-          // Redirect to dashboard after 2 seconds
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 2000);
         } else {
           // Registration successful but login failed - rare case
           setStep(3);
-          setMessage('Registro exitoso. Por favor inicia sesión.');
-          setTimeout(() => {
-            onBackToLogin();
-          }, 3000);
         }
       } else {
         setErrors({ general: registerData.detail || 'Error al registrar usuario' });
@@ -553,18 +544,10 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
   // Step 3: Success (auto-redirecting)
   if (step === 3) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-800 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">¡Bienvenido a Dropux!</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
-            <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto" />
-          </div>
-        </div>
-      </div>
+      <RegistrationSuccess 
+        userEmail={formData.email}
+        onContinueToLogin={onBackToLogin}
+      />
     );
   }
 };

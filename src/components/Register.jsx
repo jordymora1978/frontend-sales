@@ -11,6 +11,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import RegistrationSuccess from './RegistrationSuccess';
 
 const Register = ({ onBackToLogin, onRegisterSuccess }) => {
   const [formData, setFormData] = useState({
@@ -150,18 +151,10 @@ const Register = ({ onBackToLogin, onRegisterSuccess }) => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-500 to-blue-600">
-        <div className="bg-white p-8 rounded-lg shadow-2xl w-96 text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">¡Registro Exitoso!</h2>
-          <p className="text-gray-600 mb-4">
-            Tu cuenta ha sido creada y está pendiente de aprobación por un administrador.
-          </p>
-          <p className="text-sm text-gray-500">
-            Recibirás un email cuando tu cuenta sea activada.
-          </p>
-        </div>
-      </div>
+      <RegistrationSuccess 
+        userEmail={formData.email}
+        onContinueToLogin={onBackToLogin}
+      />
     );
   }
 
