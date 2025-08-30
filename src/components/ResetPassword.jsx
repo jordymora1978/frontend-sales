@@ -7,13 +7,14 @@ import {
   AlertCircle,
   Shield
 } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import DropuxLogo from './DropuxLogo';
 import { AUTH_API_URL } from '../config/api';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -25,15 +26,39 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState({});
   
-  const email = searchParams.get('email');
-  const token = searchParams.get('token');
+  // Extract parameters from URL with fallback methods
+  const getURLParams = () => {
+    // Try useSearchParams first
+    let emailParam = searchParams.get('email');
+    let tokenParam = searchParams.get('token');
+    
+    // Fallback: parse URL manually
+    if (!emailParam || !tokenParam) {
+      const urlParams = new URLSearchParams(location.search);
+      emailParam = emailParam || urlParams.get('email');
+      tokenParam = tokenParam || urlParams.get('token');
+    }
+    
+    return { emailParam, tokenParam };
+  };
+
+  const { emailParam, tokenParam } = getURLParams();
+  const email = emailParam;
+  const token = tokenParam;
 
   useEffect(() => {
+    console.log('ResetPassword mounted');
+    console.log('Location:', location.pathname);
+    console.log('Search params:', location.search);
+    console.log('Email:', email);
+    console.log('Token:', token);
+    
     // If no email or token in URL, redirect to login
     if (!email || !token) {
-      navigate('/login');
+      console.log('Missing email or token, redirecting to login');
+      navigate('/auth/login');
     }
-  }, [email, token, navigate]);
+  }, [email, token, navigate, location]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -100,7 +125,7 @@ const ResetPassword = () => {
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate('/login');
+        navigate('/auth/login');
       }, 3000);
 
     } catch (error) {
