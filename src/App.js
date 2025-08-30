@@ -9,6 +9,12 @@ import ResetPassword from './components/ResetPassword.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
+// Component to redirect preserving query parameters
+const RedirectWithParams = ({ to }) => {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+};
+
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
     <div className="flex flex-col items-center">
@@ -77,7 +83,7 @@ const AppRoutes = () => {
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
           <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
-          <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
+          <Route path="/reset-password" element={<RedirectWithParams to="/auth/reset-password" />} />
           {/* Protected application routes */}
           <Route 
             path="/*" 
