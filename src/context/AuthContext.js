@@ -110,6 +110,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Add protection against infinite loops
+  useEffect(() => {
+    const checkForInfiniteLoop = () => {
+      const refreshErrors = parseInt(localStorage.getItem('refresh_error_count') || '0');
+      if (refreshErrors > 3) {
+        console.warn('Detected potential infinite refresh loop, forcing logout');
+        localStorage.removeItem('refresh_error_count');
+        authService.forceLogout();
+      }
+    };
+
+    // Check every 5 seconds for potential loops
+    const intervalId = setInterval(checkForInfiniteLoop, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
   const refreshUser = async () => {
     try {
       const currentUser = await authService.getCurrentUser();

@@ -45,11 +45,12 @@ class AuthService {
           originalRequest._retry = true;
           
           try {
-            await this.refreshAccessToken();
-            originalRequest.headers.Authorization = `Bearer ${this.token}`;
+            const newToken = await this.refreshAccessToken();
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axios(originalRequest);
           } catch (refreshError) {
-            this.logout();
+            console.error('Token refresh failed, logging out:', refreshError);
+            await this.forceLogout();
             return Promise.reject(refreshError);
           }
         }
@@ -125,12 +126,15 @@ class AuthService {
    */
   async refreshAccessToken() {
     if (!this.refreshToken) {
+      console.error('No refresh token available for refresh');
       throw new Error('No refresh token available');
     }
 
     try {
       const response = await axios.post(`${AUTH_API_URL}/auth/refresh`, {
         refresh_token: this.refreshToken
+      }, {
+        skipAuthInterceptor: true // Prevent infinite loops
       });
 
       if (response.data.access_token) {
@@ -140,8 +144,18 @@ class AuthService {
         throw new Error('No access token in refresh response');
       }
     } catch (error) {
-      console.error('Token refresh error:', error);
-      this.logout();
+      console.error('Token refresh failed:', error);
+      
+      // Different error handling based on status
+      if (error.response?.status === 401) {
+        console.warn('Refresh token is invalid or expired');
+      } else if (error.response?.status >= 500) {
+        console.warn('Server error during token refresh');
+      } else if (!error.response) {
+        console.warn('Network error during token refresh');
+      }
+      
+      // Don't call logout here - let the interceptor handle it with forceLogout
       throw error;
     }
   }
@@ -184,6 +198,31 @@ class AuthService {
       // Continue with local logout even if API call fails
     } finally {
       this.clearAuthData();
+    }
+  }
+
+  /**
+   * Force logout with immediate redirect (for token refresh failures)
+   */
+  async forceLogout() {
+    try {
+      console.warn('Force logout: clearing all auth data and redirecting to login');
+      this.clearAuthData();
+      
+      // Clear any stuck intervals or timeouts
+      if (typeof window !== 'undefined') {
+        // Clear session storage as backup
+        sessionStorage.clear();
+        
+        // Force redirect to login
+        window.location.href = '/auth/login';
+      }
+    } catch (error) {
+      console.error('Force logout error:', error);
+      // Even if everything fails, try to redirect
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
   }
 
