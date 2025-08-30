@@ -138,30 +138,23 @@ const ResetPassword = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 p-4">
+        {/* Logo fuera de la caja blanca, en el fondo morado */}
+        <DropuxLogo className="mb-6" />
+        
         <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-6">
-              <DropuxLogo size="lg" />
-            </div>
-            
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
             </div>
             
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              ¡Contraseña Restablecida!
-            </h1>
-            <p className="text-gray-600">
-              Tu contraseña ha sido cambiada exitosamente
-            </p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">¡Contraseña Restablecida!</h1>
+            <p className="text-gray-600">Tu contraseña ha sido cambiada exitosamente</p>
           </div>
 
-          {/* Success Message */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <Shield className="h-5 w-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
               <div>
@@ -173,13 +166,10 @@ const ResetPassword = () => {
             </div>
           </div>
 
-          {/* Redirect Info */}
           <div className="text-center">
-            <p className="text-gray-600 text-sm mb-4">
-              Redirigiendo al login...
-            </p>
+            <p className="text-gray-600 text-sm mb-4">Redirigiendo al login...</p>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-blue-500 h-1.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
+              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-1.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
             </div>
           </div>
         </div>
@@ -188,20 +178,14 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 p-4">
+      {/* Logo fuera de la caja blanca, en el fondo morado */}
+      <DropuxLogo className="mb-6" />
+      
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-6">
-            <DropuxLogo size="lg" />
-          </div>
-          
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Nueva Contraseña
-          </h1>
-          <p className="text-gray-600">
-            Ingresa tu nueva contraseña segura
-          </p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Nueva Contraseña</h1>
+          <p className="text-gray-600">Ingresa tu nueva contraseña segura</p>
           
           {/* Email Display */}
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -211,7 +195,6 @@ const ResetPassword = () => {
           </div>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           {/* New Password */}
           <div className="mb-4">
@@ -225,9 +208,7 @@ const ResetPassword = () => {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleInputChange}
-                className={`pl-10 pr-12 py-3 w-full border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.newPassword ? 'border-red-500' : ''
-                }`}
+                className="pl-10 pr-12 py-2.5 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -255,9 +236,7 @@ const ResetPassword = () => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`pl-10 pr-12 py-3 w-full border rounded-lg focus:outline-none focus:border-blue-500 ${
-                  errors.confirmPassword ? 'border-red-500' : ''
-                }`}
+                className="pl-10 pr-12 py-2.5 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
                 placeholder="••••••••"
                 required
                 disabled={loading}
@@ -281,37 +260,14 @@ const ResetPassword = () => {
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-2.5 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-200 font-semibold text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                Restableciendo...
-              </>
-            ) : (
-              <>
-                <Shield className="w-4 h-4 mr-2" />
-                Restablecer Contraseña
-              </>
-            )}
+            {loading ? 'Restableciendo...' : 'Restablecer Contraseña'}
           </button>
         </form>
-
-        {/* Password Requirements */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-800 text-sm">
-            <strong>Requisitos de contraseña:</strong>
-          </p>
-          <ul className="text-blue-700 text-xs mt-1 space-y-1">
-            <li>• Mínimo 6 caracteres</li>
-            <li>• Combina letras, números y símbolos</li>
-            <li>• Evita información personal</li>
-          </ul>
-        </div>
       </div>
     </div>
   );
