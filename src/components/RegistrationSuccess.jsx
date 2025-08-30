@@ -11,13 +11,12 @@ import DropuxLogo from './DropuxLogo';
 
 const RegistrationSuccess = ({ userEmail, onContinueToLogin }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 p-4">
+      {/* Logo fuera de la caja blanca, en el fondo morado */}
+      <DropuxLogo className="mb-6" />
+      
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
-        {/* Header with Logo */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-6">
-            <DropuxLogo size="lg" />
-          </div>
           
           <div className="flex justify-center mb-6">
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
@@ -129,15 +128,14 @@ const RegistrationSuccess = ({ userEmail, onContinueToLogin }) => {
         <div className="text-center">
           <button
             onClick={onContinueToLogin}
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition duration-200 transform hover:scale-105 shadow-lg"
+            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-2.5 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-200 font-semibold text-base shadow-lg"
           >
             Continuar al Login
-            <ArrowRight className="ml-2 w-5 h-5" />
           </button>
           
           <p className="text-gray-500 text-sm mt-4">
             ¿Necesita ayuda? Contacte a{' '}
-            <a href="mailto:support@dropux.co" className="text-blue-600 hover:underline">
+            <a href="mailto:support@dropux.co" className="text-purple-600 hover:underline">
               support@dropux.co
             </a>
           </p>

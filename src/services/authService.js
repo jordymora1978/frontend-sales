@@ -207,14 +207,13 @@ class AuthService {
   hasPermission(permissionType = 'read') {
     if (!this.user) return false;
     
-    // SUPER_ADMIN has all permissions
-    if (this.user.roles?.includes('SUPER_ADMIN')) return true;
+    // Check if user has roles (súper admin)
+    if (this.user.roles?.includes('super_admin')) return true;
     
-    // Check specific sales permissions
-    return this.user.permissions?.some(permission => 
-      permission.app_name === 'sales' && 
-      (permission.permission_type === permissionType || permission.permission_type === 'admin')
-    );
+    // Check new RBAC permissions format: sales:read, sales:write, sales:manage
+    const requiredPermission = `sales:${permissionType}`;
+    return this.user.permissions?.includes(requiredPermission) || 
+           this.user.permissions?.includes('sales:manage'); // manage includes all
   }
 
   /**

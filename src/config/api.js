@@ -3,9 +3,9 @@
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Production URLs (default)
+// Production URLs (default) - TEMPORALMENTE usando localhost por Railway caído
 const PRODUCTION_CONFIG = {
-  AUTH_API_URL: 'https://auth-api.dropux.co',
+  AUTH_API_URL: 'http://localhost:8004',
   SALES_API_URL: 'https://api-sales.dropux.co',
 };
 
