@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { AUTH_API_URL } from '../config/api';
 
 const RegisterWithVerification = ({ onBackToLogin }) => {
   const navigate = useNavigate();
@@ -131,7 +132,7 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
     
     try {
       // Send verification code to email
-      const verifyResponse = await fetch('http://localhost:8004/verification/send-code', {
+      const verifyResponse = await fetch(`${AUTH_API_URL}/verification/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -166,7 +167,7 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
     
     try {
       // Verify the code
-      const verifyResponse = await fetch('http://localhost:8004/verification/verify-code', {
+      const verifyResponse = await fetch(`${AUTH_API_URL}/verification/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -184,7 +185,7 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
       }
       
       // Code is valid, now register the user
-      const registerResponse = await fetch('http://localhost:8004/auth/register', {
+      const registerResponse = await fetch(`${AUTH_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -201,7 +202,7 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
       
       if (registerResponse.ok) {
         // Auto-login after successful registration
-        const loginResponse = await fetch('http://localhost:8004/auth/login', {
+        const loginResponse = await fetch(`${AUTH_API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -253,7 +254,7 @@ const RegisterWithVerification = ({ onBackToLogin }) => {
     setMessage('');
     
     try {
-      const response = await fetch('http://localhost:8004/verification/resend-code', {
+      const response = await fetch(`${AUTH_API_URL}/verification/resend-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })

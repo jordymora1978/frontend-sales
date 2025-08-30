@@ -15,6 +15,7 @@ import passwordService from '../services/passwordService';
 import authService from '../services/authService';
 import DropuxLogo from './DropuxLogo';
 import VerificationModal from './VerificationModal';
+import { AUTH_API_URL } from '../config/api';
 import 'react-phone-number-input/style.css';
 
 const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
@@ -152,7 +153,7 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
     
     try {
       // Step 1: Send verification code to email
-      const verifyResponse = await fetch('http://localhost:8004/verification/send-code', {
+      const verifyResponse = await fetch(`${AUTH_API_URL}/verification/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -188,7 +189,7 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
   const handleVerifyCode = async (code) => {
     try {
       // Step 2: Verify the code
-      const verifyCodeResponse = await fetch('http://localhost:8004/verification/verify-code', {
+      const verifyCodeResponse = await fetch(`${AUTH_API_URL}/verification/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -206,7 +207,7 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
       }
       
       // Step 3: Register the user (email is verified)
-      const registerResponse = await fetch('http://localhost:8004/auth/register', {
+      const registerResponse = await fetch(`${AUTH_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pendingRegistrationData)
@@ -216,7 +217,7 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
       
       if (registerResponse.ok) {
         // Step 4: Auto-login after successful registration
-        const loginResponse = await fetch('http://localhost:8004/auth/login', {
+        const loginResponse = await fetch(`${AUTH_API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -266,7 +267,7 @@ const EnterpriseRegister = ({ onBackToLogin, onRegisterSuccess }) => {
 
   const handleResendCode = async () => {
     try {
-      const response = await fetch('http://localhost:8004/verification/resend-code', {
+      const response = await fetch(`${AUTH_API_URL}/verification/resend-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
