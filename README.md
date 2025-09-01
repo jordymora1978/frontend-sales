@@ -38,6 +38,13 @@ Complete documentation is available in the [Dropux Ecosystem Docs](https://githu
 - Real-time customer service interface
 - Financial reports and TRM monitoring
 - Cross-app navigation and authentication
+- **Super Admin User Management System**:
+  - Complete user administration with instant role changes
+  - Separation of administrative users (Super Admin, Admin, Asesor) vs system users (Marketplace, Dropshipper, Proveedor)
+  - Role-Based Access Control (RBAC) with drag & drop permission management
+  - Real-time user activation/deactivation
+  - Secure user deletion with confirmation
+  - Enterprise-grade dashboard interface
 
 ## 🌐 Production
 

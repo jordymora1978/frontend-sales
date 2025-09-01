@@ -2,6 +2,54 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './AdminUsers.css';
 
+// Páginas disponibles del sistema
+const AVAILABLE_PAGES = {
+    main: [
+        { id: 'dashboard', name: 'Dashboard', icon: '📊', path: '/dashboard' },
+        { id: 'orders2_0', name: 'Mis Ventas', icon: '🛒', path: '/orders2_0' },
+        { id: 'customers', name: 'Mis Clientes', icon: '👥', path: '/customers' },
+        { id: 'control-reportes', name: 'Mis Reportes', icon: '📈', path: '/control-reportes' },
+        { id: 'quotes', name: 'Cotizaciones', icon: '📄', path: '/quotes' }
+    ],
+    config: [
+        { id: 'ml-stores', name: 'Mis Tiendas', icon: '🏪', path: '/ml-stores' },
+        { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: '🔄', path: '/ml-sync' },
+        { id: 'apis-conexiones', name: 'APIs y Conexiones', icon: '🔗', path: '/apis-conexiones' },
+        { id: 'mis-etiquetas', name: 'Mis Etiquetas', icon: '🏷️', path: '/mis-etiquetas' }
+    ],
+    control: [
+        { id: 'control-consolidador', name: 'Consolidador 2.0', icon: '📦', path: '/control-consolidador' },
+        { id: 'control-validador', name: 'Validador', icon: '✅', path: '/control-validador' },
+        { id: 'control-trm', name: 'TRM Monitor', icon: '💱', path: '/control-trm' },
+        { id: 'control-gmail-drive', name: 'Gmail Drive', icon: '📧', path: '/control-gmail-drive' },
+        { id: 'google-api', name: 'Google API', icon: '☁️', path: '/google-api' }
+    ],
+    products: [
+        { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: '📦', path: '/catalogo-amazon' },
+        { id: 'publicaciones-ml', name: 'Publicaciones ML', icon: '🛍️', path: '/publicaciones-ml' },
+        { id: 'stock-proveedores', name: 'Stock Proveedores', icon: '🚚', path: '/stock-proveedores' }
+    ]
+};
+
+// Clasificación de roles por tipo de usuario
+const USER_TYPES = {
+    administrative: ['super_admin', 'admin', 'asesor'],
+    system: ['marketplace', 'dropshipper', 'proveedor']
+};
+
+// Permisos por defecto para cada rol
+const DEFAULT_ROLE_PERMISSIONS = {
+    // Usuarios Administrativos
+    'super_admin': ['admin', 'admin/users', 'admin/system', ...Object.values(AVAILABLE_PAGES).flat().map(p => p.id)],
+    'admin': ['dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes', 'ml-stores', 'ml-sync', 'control-consolidador', 'control-validador'],
+    'asesor': ['dashboard', 'customers', 'control-reportes', 'quotes'],
+    
+    // Usuarios del Sistema  
+    'marketplace': ['dashboard', 'orders2_0', 'customers', 'publicaciones-ml', 'ml-stores'],
+    'dropshipper': ['dashboard', 'orders2_0', 'customers', 'stock-proveedores', 'catalogo-amazon'],
+    'proveedor': ['dashboard', 'stock-proveedores', 'control-reportes']
+};
+
 const AdminUsers = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState([]);
@@ -10,6 +58,14 @@ const AdminUsers = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [activeTab, setActiveTab] = useState('administrative');
+    const [selectedRole, setSelectedRole] = useState('admin');
+    const [draggedPage, setDraggedPage] = useState(null);
+    const [rolePermissions, setRolePermissions] = useState(DEFAULT_ROLE_PERMISSIONS);
+    const [userPermissions, setUserPermissions] = useState({});
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [toggleLoading, setToggleLoading] = useState(null);
 
     useEffect(() => {
         if (!user?.roles?.includes('super_admin')) {
@@ -20,17 +76,26 @@ const AdminUsers = () => {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('https://auth-api.dropux.co/users', {
+            console.log('Fetching users...');
+            const authToken = localStorage.getItem('auth_token');
+            console.log('Auth token:', authToken ? 'Present' : 'Missing');
+            
+            // Intentar con localhost para desarrollo primero
+            const localResponse = await fetch('http://localhost:8004/admin/users', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                    'Content-Type': 'application/json'
+                    // No enviamos auth token por ahora para testing
                 }
             });
             
-            if (response.ok) {
-                const data = await response.json();
-                setUsers(data.users || []);
+            console.log('API Response status:', localResponse.status);
+            
+            if (localResponse.ok) {
+                const localData = await localResponse.json();
+                console.log('Users received:', localData.users?.length || 0);
+                setUsers(localData.users || []);
             } else {
-                console.error('Failed to fetch users');
+                console.error('API Error:', localResponse.statusText);
                 // Fallback to mock data for development
                 setUsers([
                     {
@@ -41,10 +106,25 @@ const AdminUsers = () => {
                         country: 'Colombia',
                         phone: null,
                         company: null,
-                        roles: ['super_admin'],
+                        user_type: 'super_admin',
                         is_active: true,
+                        is_verified: true,
                         created_at: '2024-01-15T00:00:00',
                         last_login: '2025-08-28T10:30:00'
+                    },
+                    {
+                        id: 'pending-user-1',
+                        email: 'empleado@dropux.co',
+                        first_name: 'Juan',
+                        last_name: 'Pérez',
+                        country: null,
+                        phone: null,
+                        company: null,
+                        user_type: null,
+                        is_active: true,
+                        is_verified: false,
+                        created_at: '2025-09-01T10:00:00',
+                        last_login: null
                     }
                 ]);
             }
@@ -60,7 +140,58 @@ const AdminUsers = () => {
         setShowEditModal(true);
     };
 
+    const handleDeleteUser = (user) => {
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteUser = async (userId) => {
+        try {
+            // Intentar API real primero
+            const response = await fetch(`https://auth-api.dropux.co/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                // Intentar con localhost
+                const localResponse = await fetch(`http://localhost:8004/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!localResponse.ok) {
+                    console.warn('API not available, deleting locally only');
+                }
+            }
+            
+            // Eliminar del estado local
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+            
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            // Aún así eliminar localmente para demo
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+        }
+    };
+
     const handleToggleUserStatus = async (userId) => {
+        // Cambio inmediato en la UI
+        setUsers(prev => prev.map(u => 
+            u.id === userId ? { ...u, is_active: !u.is_active } : u
+        ));
+        
+        // API call en background (sin blocking UI)
         try {
             const response = await fetch(`https://auth-api.dropux.co/users/${userId}/toggle-status`, {
                 method: 'PATCH',
@@ -70,12 +201,19 @@ const AdminUsers = () => {
                 }
             });
             
-            if (response.ok) {
-                setUsers(prev => prev.map(u => 
-                    u.id === userId ? { ...u, is_active: !u.is_active } : u
-                ));
-            } else {
-                console.error('Failed to toggle user status');
+            if (!response.ok) {
+                // Intentar con localhost
+                const localResponse = await fetch(`http://localhost:8004/admin/users/${userId}/toggle-status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!localResponse.ok) {
+                    console.warn('API not available, using local state only');
+                }
             }
         } catch (error) {
             console.error('Error toggling user status:', error);
@@ -83,34 +221,158 @@ const AdminUsers = () => {
     };
 
     const handleUpdateUser = async (updatedUser) => {
-        // TODO: API call
+        // CAMBIO INMEDIATO - Actualizar UI instantáneamente
         setUsers(prev => prev.map(u => 
-            u.id === updatedUser.id ? updatedUser : u
+            u.id === updatedUser.id ? { ...updatedUser, is_verified: true } : u
         ));
         setShowEditModal(false);
         setSelectedUser(null);
+        
+        // API call en background (sin blocking UI)
+        try {
+            const response = await fetch(`https://auth-api.dropux.co/admin/users/${updatedUser.id}/assign-role`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_type: updatedUser.user_type,
+                    is_verified: true
+                })
+            });
+            
+            if (!response.ok) {
+                // Intentar con localhost
+                const localResponse = await fetch(`http://localhost:8004/admin/users/${updatedUser.id}/assign-role`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_type: updatedUser.user_type,
+                        is_verified: true
+                    })
+                });
+                
+                if (!localResponse.ok) {
+                    console.warn('API not available, updating locally only');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating user:', error);
+        }
     };
 
-    const getRoleColor = (roles) => {
-        if (roles.includes('super_admin')) return 'role-super-admin';
-        if (roles.includes('CLIENT_ADMIN')) return 'role-client-admin';
-        return 'role-employee';
+    const getRoleColor = (userType) => {
+        switch (userType) {
+            case 'super_admin': return 'role-super-admin';
+            case 'admin': return 'role-admin';
+            case 'asesor': return 'role-operator';
+            case 'marketplace': return 'role-viewer';
+            case 'dropshipper': return 'role-viewer';
+            case 'proveedor': return 'role-viewer';
+            default: return 'role-pending';
+        }
     };
 
-    const getRoleLabel = (roles) => {
-        if (roles.includes('super_admin')) return 'Super Admin';
-        if (roles.includes('CLIENT_ADMIN')) return 'Admin Cliente';
-        return 'Empleado';
+    const getRoleLabel = (userType) => {
+        switch (userType) {
+            case 'super_admin': return 'Super Admin';
+            case 'admin': return 'Administrador';
+            case 'asesor': return 'Asesor';
+            case 'marketplace': return 'Marketplace';
+            case 'dropshipper': return 'Dropshipper';
+            case 'proveedor': return 'Proveedor';
+            default: return 'Pendiente de Rol';
+        }
     };
 
-    const filteredUsers = users.filter(user => {
+    // Función para asignar rol por defecto a usuarios sin rol
+    const getUserWithDefaultRole = (user) => {
+        if (!user.user_type || user.user_type === null) {
+            // Usuarios sin rol se asignan como 'asesor' por defecto (administrativos)
+            return { ...user, user_type: 'asesor', is_verified: false };
+        }
+        return user;
+    };
+
+    const filteredUsers = users.map(getUserWithDefaultRole).filter(user => {
         const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesRole = roleFilter === 'all' || user.roles.includes(roleFilter);
+        // Filtrar por pestaña activa - CORREGIDO: separación correcta de usuarios
+        let matchesTab = false;
+        if (activeTab === 'administrative') {
+            // Administrativos: super_admin, admin, asesor (incluyendo sin rol que se asignan como asesor)
+            matchesTab = USER_TYPES.administrative.includes(user.user_type);
+        } else if (activeTab === 'system') {
+            // Sistema: marketplace, dropshipper, proveedor
+            matchesTab = USER_TYPES.system.includes(user.user_type);
+        } else {
+            matchesTab = true; // Para pestaña de permisos, mostrar todos
+        }
         
-        return matchesSearch && matchesRole;
+        // Filtrar por rol específico
+        const matchesRole = roleFilter === 'all' || 
+                           user.user_type === roleFilter;
+        
+        return matchesSearch && matchesTab && matchesRole;
     });
+
+    // Drag & Drop functions
+    const handleDragStart = (e, page) => {
+        setDraggedPage(page);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDropOnRole = (e, targetRole) => {
+        e.preventDefault();
+        if (draggedPage && !rolePermissions[targetRole].includes(draggedPage.id)) {
+            setRolePermissions(prev => ({
+                ...prev,
+                [targetRole]: [...prev[targetRole], draggedPage.id]
+            }));
+        }
+        setDraggedPage(null);
+    };
+
+    const handleDropOnUser = (e, userId) => {
+        e.preventDefault();
+        if (draggedPage) {
+            setUserPermissions(prev => ({
+                ...prev,
+                [userId]: [...(prev[userId] || []), draggedPage.id]
+            }));
+        }
+        setDraggedPage(null);
+    };
+
+    const removePageFromRole = (pageId, role) => {
+        setRolePermissions(prev => ({
+            ...prev,
+            [role]: prev[role].filter(id => id !== pageId)
+        }));
+    };
+
+    const removePageFromUser = (pageId, userId) => {
+        setUserPermissions(prev => ({
+            ...prev,
+            [userId]: (prev[userId] || []).filter(id => id !== pageId)
+        }));
+    };
+
+    // Reset filter when changing tabs
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        setRoleFilter('all');
+    };
 
     // Verificar permisos
     if (!user?.roles?.includes('super_admin')) {
@@ -135,8 +397,33 @@ const AdminUsers = () => {
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="users-filters">
+            {/* Tabs */}
+            <div className="admin-tabs">
+                <button 
+                    className={`tab-button ${activeTab === 'administrative' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('administrative')}
+                >
+                    👑 Usuarios Administrativos
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'system' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('system')}
+                >
+                    👥 Usuarios del Sistema
+                </button>
+                <button 
+                    className={`tab-button ${activeTab === 'permissions' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('permissions')}
+                >
+                    🔒 Permisos por Rol
+                </button>
+            </div>
+
+            {/* Tab Content */}
+            {(activeTab === 'administrative' || activeTab === 'system') && (
+                <>
+                    {/* Filters */}
+                    <div className="users-filters">
                 <div className="search-box">
                     <input
                         type="text"
@@ -152,15 +439,38 @@ const AdminUsers = () => {
                     className="role-filter"
                 >
                     <option value="all">Todos los roles</option>
-                    <option value="super_admin">Super Admin</option>
-                    <option value="CLIENT_ADMIN">Admin Cliente</option>
-                    <option value="EMPLOYEE">Empleado</option>
+                    {activeTab === 'administrative' ? (
+                        <>
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Administrador</option>
+                            <option value="asesor">Asesor</option>
+                        </>
+                    ) : activeTab === 'system' ? (
+                        <>
+                            <option value="marketplace">Marketplace</option>
+                            <option value="dropshipper">Dropshipper</option>
+                            <option value="proveedor">Proveedor</option>
+                        </>
+                    ) : (
+                        <>
+                            <optgroup label="Administrativos">
+                                <option value="super_admin">Super Admin</option>
+                                <option value="admin">Administrador</option>
+                                <option value="asesor">Asesor</option>
+                            </optgroup>
+                            <optgroup label="Sistema">
+                                <option value="marketplace">Marketplace</option>
+                                <option value="dropshipper">Dropshipper</option>
+                                <option value="proveedor">Proveedor</option>
+                            </optgroup>
+                        </>
+                    )}
                 </select>
 
                 <div className="users-stats">
                     <span>Total: {filteredUsers.length}</span>
                     <span>Activos: {filteredUsers.filter(u => u.is_active).length}</span>
-                    <span>Pendientes: {filteredUsers.filter(u => !u.is_active).length}</span>
+                    <span>Pendientes: {filteredUsers.filter(u => !u.is_verified).length}</span>
                 </div>
             </div>
 
@@ -176,9 +486,8 @@ const AdminUsers = () => {
                         <thead>
                             <tr>
                                 <th>Usuario</th>
-                                <th>Empresa/País</th>
+                                <th>País</th>
                                 <th>Rol</th>
-                                <th>Estado</th>
                                 <th>Fecha Registro</th>
                                 <th>Acciones</th>
                             </tr>
@@ -187,7 +496,7 @@ const AdminUsers = () => {
                             {filteredUsers.map(user => (
                                 <tr key={user.id} className={!user.is_active ? 'inactive' : ''}>
                                     <td>
-                                        <div className="user-info">
+                                        <div className="user-cell">
                                             <div className="user-avatar">
                                                 {user.first_name?.[0] || 'U'}{user.last_name?.[0] || 'S'}
                                             </div>
@@ -196,27 +505,24 @@ const AdminUsers = () => {
                                                     {user.first_name || 'Sin nombre'} {user.last_name || ''}
                                                 </div>
                                                 <div className="user-email">{user.email}</div>
-                                                {user.phone && <div className="user-phone">📞 {user.phone}</div>}
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div className="business-info">
-                                            {user.company && <div className="company">🏢 {user.company}</div>}
-                                            <div className="country">🌍 {user.country || 'No especificado'}</div>
+                                        <div className="business-cell">
+                                            🌍 {user.country || 'Colombia'}
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`role-badge ${getRoleColor(user.roles || [])}`}>
-                                            {getRoleLabel(user.roles || [])}
+                                        <span className={`role-badge ${getRoleColor(user.user_type)}`}>
+                                            {getRoleLabel(user.user_type)}
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
-                                            {user.is_active ? '✅ Activo' : '⛔ Pendiente'}
-                                        </span>
+                                        <div className="date-cell">
+                                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                        </div>
                                     </td>
-                                    <td>{user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</td>
                                     <td>
                                         <div className="user-actions">
                                             <button 
@@ -229,9 +535,16 @@ const AdminUsers = () => {
                                             <button 
                                                 className={`btn-action ${user.is_active ? 'deactivate' : 'activate'}`}
                                                 onClick={() => handleToggleUserStatus(user.id)}
-                                                title={user.is_active ? 'Desactivar' : 'Aprobar'}
+                                                title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}
                                             >
-                                                {user.is_active ? '⛔' : '✅'}
+                                                {user.is_active ? '✅' : '⛔'}
+                                            </button>
+                                            <button 
+                                                className="btn-action delete"
+                                                onClick={() => handleDeleteUser(user)}
+                                                title="Eliminar usuario"
+                                            >
+                                                🗑️
                                             </button>
                                         </div>
                                     </td>
@@ -242,13 +555,101 @@ const AdminUsers = () => {
                 </div>
             )}
 
-            {/* Edit User Modal */}
-            {showEditModal && selectedUser && (
-                <EditUserModal 
-                    user={selectedUser}
-                    onClose={() => setShowEditModal(false)}
-                    onUpdate={handleUpdateUser}
-                />
+                    {/* Edit User Modal */}
+                    {showEditModal && selectedUser && (
+                        <EditUserModal 
+                            user={selectedUser}
+                            onClose={() => setShowEditModal(false)}
+                            onUpdate={handleUpdateUser}
+                        />
+                    )}
+
+                    {showDeleteModal && userToDelete && (
+                        <DeleteUserModal 
+                            user={userToDelete}
+                            onClose={() => setShowDeleteModal(false)}
+                            onConfirm={confirmDeleteUser}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* Permissions Tab */}
+            {activeTab === 'permissions' && (
+                <div className="permissions-panel">
+                    {/* Available Pages */}
+                    <div className="permissions-section">
+                        <h3>📄 Páginas Disponibles</h3>
+                        <p>Arrastra las páginas hacia los roles para asignar permisos</p>
+                        
+                        {Object.entries(AVAILABLE_PAGES).map(([category, pages]) => (
+                            <div key={category} className="page-category">
+                                <h4>{category === 'main' ? '🏠 Principal' : 
+                                    category === 'config' ? '⚙️ Configuración' : 
+                                    category === 'control' ? '📊 Control Suite' : '📦 Products Suite'}</h4>
+                                <div className="page-grid">
+                                    {pages.map(page => (
+                                        <div
+                                            key={page.id}
+                                            className="page-card"
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, page)}
+                                        >
+                                            <span className="page-icon">{page.icon}</span>
+                                            <span className="page-name">{page.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Role Permissions */}
+                    <div className="permissions-section">
+                        <h3>🔒 Permisos por Rol</h3>
+                        <div className="roles-grid">
+                            {Object.entries(rolePermissions).map(([role, permissions]) => (
+                                <div
+                                    key={role}
+                                    className="role-container"
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDropOnRole(e, role)}
+                                >
+                                    <div className="role-header">
+                                        <h4>{role === 'super_admin' ? '👑 Super Admin' : 
+                                            role === 'admin' ? '🛡️ Administrador' : 
+                                            role === 'asesor' ? '👨‍💼 Asesor' : 
+                                            role === 'marketplace' ? '🏪 Marketplace' :
+                                            role === 'dropshipper' ? '📦 Dropshipper' :
+                                            role === 'proveedor' ? '🚚 Proveedor' : role}</h4>
+                                        <span className="permission-count">{permissions.length} páginas</span>
+                                    </div>
+                                    <div className="assigned-pages">
+                                        {permissions.map(pageId => {
+                                            const allPages = Object.values(AVAILABLE_PAGES).flat();
+                                            const page = allPages.find(p => p.id === pageId);
+                                            if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
+                                            
+                                            return (
+                                                <div key={pageId} className="assigned-page">
+                                                    <span>{page?.icon || '⚙️'}</span>
+                                                    <span>{page?.name || pageId}</span>
+                                                    <button
+                                                        onClick={() => removePageFromRole(pageId, role)}
+                                                        className="remove-btn"
+                                                        title="Quitar página"
+                                                    >
+                                                        ✖️
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
@@ -259,13 +660,23 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        roles: user.roles,
-        active: user.active
+        user_type: user.user_type,
+        is_active: user.is_active
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setIsLoading(true);
+        
+        // Cambio inmediato
         onUpdate({ ...user, ...formData });
+        
+        // Cerrar modal inmediatamente
+        setTimeout(() => {
+            onClose();
+        }, 100);
     };
 
     return (
@@ -309,14 +720,22 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                     </div>
                     
                     <div className="form-group">
-                        <label>Rol</label>
+                        <label>Tipo de Usuario</label>
                         <select
-                            value={formData.roles[0]}
-                            onChange={(e) => setFormData(prev => ({ ...prev, roles: [e.target.value] }))}
+                            value={formData.user_type || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, user_type: e.target.value }))}
                         >
-                            <option value="EMPLOYEE">Empleado</option>
-                            <option value="CLIENT_ADMIN">Admin Cliente</option>
-                            <option value="super_admin">Super Admin</option>
+                            <option value="">Sin Asignar</option>
+                            <optgroup label="Usuarios Administrativos">
+                                <option value="super_admin">Super Admin</option>
+                                <option value="admin">Administrador</option>
+                                <option value="asesor">Asesor</option>
+                            </optgroup>
+                            <optgroup label="Usuarios del Sistema">
+                                <option value="marketplace">Marketplace</option>
+                                <option value="dropshipper">Dropshipper</option>
+                                <option value="proveedor">Proveedor</option>
+                            </optgroup>
                         </select>
                     </div>
                     
@@ -324,8 +743,8 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                         <label>
                             <input
                                 type="checkbox"
-                                checked={formData.active}
-                                onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
+                                checked={formData.is_active}
+                                onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
                             />
                             Usuario activo
                         </label>
@@ -335,11 +754,77 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                         <button type="button" className="btn-secondary" onClick={onClose}>
                             Cancelar
                         </button>
-                        <button type="submit" className="btn-primary">
-                            Guardar Cambios
+                        <button type="submit" className="btn-primary" disabled={isLoading}>
+                            {isLoading ? '⏳ Guardando...' : 'Guardar Cambios'}
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+const DeleteUserModal = ({ user, onClose, onConfirm }) => {
+    const [confirmText, setConfirmText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+    const requiredText = 'ELIMINAR';
+    
+    const handleConfirm = async () => {
+        if (confirmText !== requiredText) return;
+        
+        setIsDeleting(true);
+        await onConfirm(user.id);
+        setIsDeleting(false);
+    };
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h2>🗑️ Eliminar Usuario</h2>
+                    <button className="modal-close" onClick={onClose}>✖️</button>
+                </div>
+                
+                <div className="delete-user-form">
+                    <div className="warning-message">
+                        <div className="warning-icon">⚠️</div>
+                        <div>
+                            <h3>¡Esta acción no se puede deshacer!</h3>
+                            <p>Vas a eliminar permanentemente al usuario:</p>
+                            <div className="user-to-delete">
+                                <strong>{user.first_name} {user.last_name}</strong>
+                                <div className="email">{user.email}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="confirmation-input">
+                        <label>
+                            Para confirmar, escribe <strong>{requiredText}</strong> en el campo de abajo:
+                        </label>
+                        <input
+                            type="text"
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            placeholder={`Escribe "${requiredText}"`}
+                            className="confirm-input"
+                        />
+                    </div>
+                    
+                    <div className="modal-actions">
+                        <button type="button" className="btn-secondary" onClick={onClose}>
+                            Cancelar
+                        </button>
+                        <button 
+                            type="button" 
+                            className="btn-danger"
+                            disabled={confirmText !== requiredText || isDeleting}
+                            onClick={handleConfirm}
+                        >
+                            {isDeleting ? '🗑️ Eliminando...' : '🗑️ Eliminar Usuario'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -14,7 +14,10 @@ import {
   Settings,
   Archive,
   Menu,
-  X
+  X,
+  Shield,
+  UserCog,
+  Key
 } from 'lucide-react';
 import ssoManager from '../utils/ssoManager';
 import './UnifiedSidebar.css';
@@ -147,6 +150,31 @@ const UnifiedSidebar = ({ activeTab, setActiveTab }) => {
           icon: Users,
           url: "https://products.dropux.co/suppliers",
           description: "Gestión de suppliers"
+        }
+      ]
+    },
+    admin: {
+      title: "⚡ Super Admin",
+      icon: Shield,
+      type: "native",
+      items: [
+        { 
+          id: "admin-dashboard", 
+          name: "Dashboard Admin", 
+          icon: BarChart3,
+          description: "Panel de control del sistema"
+        },
+        { 
+          id: "admin-users", 
+          name: "Usuarios & Roles", 
+          icon: UserCog,
+          description: "Gestión completa de usuarios y permisos"
+        },
+        { 
+          id: "admin-system", 
+          name: "Monitor Sistema", 
+          icon: Settings,
+          description: "Estado y logs del sistema"
         }
       ]
     }

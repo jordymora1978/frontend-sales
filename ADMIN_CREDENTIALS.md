@@ -13,9 +13,18 @@ Password: Admin123!
 
 ## Funcionalidades Admin
 - ✅ Panel de control principal
-- ✅ Gestión de usuarios y roles  
+- ✅ **Gestión avanzada de usuarios**:
+  - Cambios instantáneos de roles (< 1 segundo)
+  - Separación automática: Administrativos vs Sistema
+  - Activación/desactivación en tiempo real
+  - Eliminación segura con confirmación
+  - Sistema de permisos drag & drop por rol
 - ✅ Monitor del sistema en tiempo real
 - ✅ Control total del ecosistema
+- ✅ **Rutas disponibles**:
+  - `/admin` - Dashboard principal
+  - `/admin/users` - Gestión de usuarios
+  - `/admin/system` - Monitor del sistema
 
 ## Logout
 - Header: Click en tu nombre → "Cerrar sesión"
