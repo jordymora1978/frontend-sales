@@ -14,7 +14,12 @@ const AdminSystem = () => {
     const [refreshInterval, setRefreshInterval] = useState(null);
 
     useEffect(() => {
-        if (!user?.roles?.includes('super_admin')) {
+        // Verificar permisos usando el mismo criterio que la validación principal
+        const hasAdminSystemPermission = user?.permissions?.some(perm => 
+            perm.startsWith('admin-system:') || perm.startsWith('sales:')
+        ) || user?.roles?.includes('super_admin');
+
+        if (!hasAdminSystemPermission) {
             return;
         }
         
@@ -178,12 +183,16 @@ const AdminSystem = () => {
         // TODO: Implementar acciones reales
     };
 
-    // Verificar permisos
-    if (!user?.roles?.includes('super_admin')) {
+    // Verificar permisos - usar sistema de permisos en lugar de roles hardcodeados
+    const hasAdminSystemPermission = user?.permissions?.some(perm => 
+        perm.startsWith('admin-system:') || perm.startsWith('sales:')
+    ) || user?.roles?.includes('super_admin');
+
+    if (!hasAdminSystemPermission) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>
-                <p>Solo Super Administradores pueden acceder a este módulo.</p>
+                <p>No tienes permisos para acceder al monitor del sistema.</p>
             </div>
         );
     }

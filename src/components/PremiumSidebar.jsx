@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import './PremiumSidebar.css';
 import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
 // Theme Context para manejo profesional
 export const ThemeContext = createContext();
@@ -67,6 +68,8 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [internalIsMobile, setInternalIsMobile] = useState(false);
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
+  const [userPagePermissions, setUserPagePermissions] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
   const { theme, toggleTheme } = useContext(ThemeContext) || {};
   const { user, logout, refreshUser } = useAuth();
 
@@ -91,6 +94,95 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     }
   }, [isMobile]);
 
+  // Load user permissions from backend
+  useEffect(() => {
+    const fetchUserPermissions = async () => {
+      if (!user?.roles || user.roles.length === 0) {
+        console.log('🔍 DEBUG: No user roles found');
+        setUserPagePermissions([]);
+        setPermissionsLoading(false);
+        return;
+      }
+
+      try {
+        setPermissionsLoading(true);
+        console.log('🔍 DEBUG: User roles:', user.roles);
+        
+        // Call the same endpoint that AdminUsers.jsx uses
+        const response = await fetch(`${process.env.REACT_APP_AUTH_API_URL}/admin/role-permissions`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authService.getToken()}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔍 DEBUG: Permissions data from API:', data);
+          const userRole = user.roles[0]; // Get first role (users typically have one role)
+          console.log('🔍 DEBUG: User role:', userRole);
+          const rolePermissions = data.permissions[userRole] || [];
+          console.log('🔍 DEBUG: Role permissions for', userRole, ':', rolePermissions);
+          setUserPagePermissions(rolePermissions);
+        } else {
+          console.error('Failed to fetch user permissions');
+          setUserPagePermissions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+        setUserPagePermissions([]);
+      } finally {
+        setPermissionsLoading(false);
+      }
+    };
+
+    fetchUserPermissions();
+  }, [user]);
+
+  // Function to check if user has permission for a page
+  const hasPagePermission = (pageId) => {
+    // Super admin has access to all pages
+    if (user?.roles?.includes('super_admin')) {
+      return true;
+    }
+    
+    // Check if user has specific page permission
+    return userPagePermissions.includes(pageId);
+  };
+
+  // Check if a section has any pages with permissions
+  const sectionHasPermissions = (pageIds) => {
+    return pageIds.some(pageId => hasPagePermission(pageId));
+  };
+
+  // Configuration section pages
+  const configPages = ['ml-stores', 'ml-sync', 'apis-conexiones', 'mis-etiquetas'];
+  
+  // Control suite pages
+  const controlPages = ['control-consolidador', 'control-validador', 'control-trm', 'control-gmail-drive', 'google-api'];
+  
+  // Products suite pages
+  const productPages = ['catalogo-amazon', 'publicaciones-ml', 'stock-proveedores'];
+
+  // Function to get role display name with emoji
+  const getRoleDisplayName = () => {
+    if (!user?.roles || user.roles.length === 0) {
+      return 'Usuario';
+    }
+
+    const role = user.roles[0];
+    const roleNames = {
+      'super_admin': '👑 Super Admin',
+      'admin': '🛡️ Administrador', 
+      'asesor': '👨‍💼 Asesor',
+      'marketplace': '🏪 Marketplace',
+      'dropshipper': '📦 Dropshipper',
+      'proveedor': '🚚 Proveedor'
+    };
+
+    return roleNames[role] || 'Usuario';
+  };
 
   const menuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
@@ -98,6 +190,29 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     { id: 'customers', name: 'Mis Clientes', icon: Users, badge: null, path: '/customers' },
     { id: 'control-reportes', name: 'Mis Reportes', icon: TrendingUp, badge: null, path: '/control-reportes' },
     { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3', path: '/quotes' }
+  ];
+
+  // System section pages (always visible but filtered by permissions)
+  const systemPages = [
+    { id: 'ml-stores', name: 'Mis Tiendas', icon: Package, path: '/ml-stores' },
+    { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: RefreshCw, path: '/ml-sync' },
+    { id: 'apis-conexiones', name: 'APIs y Conexiones', icon: Key, path: '/apis-conexiones' },
+    { id: 'mis-etiquetas', name: 'Mis Etiquetas', icon: Tag, path: '/mis-etiquetas' },
+    { id: 'control-consolidador', name: 'Consolidador 2.0', icon: Archive, path: '/control-consolidador' },
+    { id: 'control-validador', name: 'Validador', icon: CheckCircle2, path: '/control-validador' },
+    { id: 'control-trm', name: 'TRM Monitor', icon: DollarSign, path: '/control-trm' },
+    { id: 'control-gmail-drive', name: 'Gmail Drive', icon: Mail, path: '/control-gmail-drive' },
+    { id: 'google-api', name: 'Google API', icon: Cloud, path: '/google-api' },
+    { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: Package, path: '/catalogo-amazon' },
+    { id: 'publicaciones-ml', name: 'Publicaciones ML', icon: ShoppingBag, path: '/publicaciones-ml' },
+    { id: 'stock-proveedores', name: 'Stock Proveedores', icon: Truck, path: '/stock-proveedores' }
+  ];
+
+  // Admin pages (requires special permissions)
+  const adminPages = [
+    { id: 'admin-panel', name: 'Panel Admin', icon: Shield, path: '/admin' },
+    { id: 'admin-users', name: 'Gestionar Usuarios', icon: User, path: '/admin/users' },
+    { id: 'admin-system', name: 'Monitor Sistema', icon: Activity, path: '/admin/system' }
   ];
 
   const toggleExpanded = (itemId) => {
@@ -163,7 +278,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
               <div className="section-label">NAVEGACIÓN</div>
             )}
             
-            {menuItems.map(item => (
+            {menuItems.filter(item => hasPagePermission(item.id)).map(item => (
               <div key={item.id} className="nav-item-wrapper">
                 {item.isGroup ? (
                   <>
@@ -281,183 +396,213 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             <div className="nav-section nav-bottom">
               <div className="section-label">SISTEMA</div>
               
-              <button
-                className={`nav-item nav-group ${
-                  expandedItems.has('configuracion') ? 'expanded' : ''
-                }`}
-                onClick={() => toggleExpanded('configuracion')}
-              >
-                <div className="item-content">
-                  <Settings className="item-icon" size={18} />
-                  <span className="item-name">Configuración</span>
-                  <ChevronRight className={`expand-icon ${
+              {sectionHasPermissions(configPages) && (
+                <button
+                  className={`nav-item nav-group ${
                     expandedItems.has('configuracion') ? 'expanded' : ''
-                  }`} size={14} />
-                </div>
-              </button>
+                  }`}
+                  onClick={() => toggleExpanded('configuracion')}
+                >
+                  <div className="item-content">
+                    <Settings className="item-icon" size={18} />
+                    <span className="item-name">Configuración</span>
+                    <ChevronRight className={`expand-icon ${
+                      expandedItems.has('configuracion') ? 'expanded' : ''
+                    }`} size={14} />
+                  </div>
+                </button>
+              )}
               
               {expandedItems.has('configuracion') && (
                 <div className="sub-items">
-                  <Link 
-                    to="/ml-stores"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Package className="item-icon" size={16} />
-                      <span className="item-name">Mis Tiendas</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/ml-sync"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <RefreshCw className="item-icon" size={16} />
-                      <span className="item-name">Sincronizar Órdenes</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/apis-conexiones"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Key className="item-icon" size={16} />
-                      <span className="item-name">APIs y Conexiones</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/mis-etiquetas"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Tag className="item-icon" size={16} />
-                      <span className="item-name">Mis Etiquetas</span>
-                    </div>
-                  </Link>
+                  {hasPagePermission('ml-stores') && (
+                    <Link 
+                      to="/ml-stores"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Package className="item-icon" size={16} />
+                        <span className="item-name">Mis Tiendas</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('ml-sync') && (
+                    <Link 
+                      to="/ml-sync"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <RefreshCw className="item-icon" size={16} />
+                        <span className="item-name">Sincronizar Órdenes</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('apis-conexiones') && (
+                    <Link 
+                      to="/apis-conexiones"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Key className="item-icon" size={16} />
+                        <span className="item-name">APIs y Conexiones</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('mis-etiquetas') && (
+                    <Link 
+                      to="/mis-etiquetas"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Tag className="item-icon" size={16} />
+                        <span className="item-name">Mis Etiquetas</span>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               )}
 
-              <button
-                className={`nav-item nav-group ${
-                  expandedItems.has('control') ? 'expanded' : ''
-                }`}
-                onClick={() => toggleExpanded('control')}
-              >
-                <div className="item-content">
-                  <FolderOpen className="item-icon" size={18} />
-                  <span className="item-name">Control Suite</span>
-                  <ChevronRight className={`expand-icon ${
+              {sectionHasPermissions(controlPages) && (
+                <button
+                  className={`nav-item nav-group ${
                     expandedItems.has('control') ? 'expanded' : ''
-                  }`} size={14} />
-                </div>
-              </button>
+                  }`}
+                  onClick={() => toggleExpanded('control')}
+                >
+                  <div className="item-content">
+                    <FolderOpen className="item-icon" size={18} />
+                    <span className="item-name">Control Suite</span>
+                    <ChevronRight className={`expand-icon ${
+                      expandedItems.has('control') ? 'expanded' : ''
+                    }`} size={14} />
+                  </div>
+                </button>
+              )}
               
               {expandedItems.has('control') && (
                 <div className="sub-items">
-                  <Link 
-                    to="/control-consolidador"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Archive className="item-icon" size={16} />
-                      <span className="item-name">Consolidador 2.0</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/control-validador"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <CheckCircle2 className="item-icon" size={16} />
-                      <span className="item-name">Validador</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/control-trm"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <DollarSign className="item-icon" size={16} />
-                      <span className="item-name">TRM Monitor</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/control-gmail-drive"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Mail className="item-icon" size={16} />
-                      <span className="item-name">Gmail Drive</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/google-api"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Cloud className="item-icon" size={16} />
-                      <span className="item-name">Google API</span>
-                    </div>
-                  </Link>
+                  {hasPagePermission('control-consolidador') && (
+                    <Link 
+                      to="/control-consolidador"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Archive className="item-icon" size={16} />
+                        <span className="item-name">Consolidador 2.0</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('control-validador') && (
+                    <Link 
+                      to="/control-validador"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <CheckCircle2 className="item-icon" size={16} />
+                        <span className="item-name">Validador</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('control-trm') && (
+                    <Link 
+                      to="/control-trm"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <DollarSign className="item-icon" size={16} />
+                        <span className="item-name">TRM Monitor</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('control-gmail-drive') && (
+                    <Link 
+                      to="/control-gmail-drive"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Mail className="item-icon" size={16} />
+                        <span className="item-name">Gmail Drive</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('google-api') && (
+                    <Link 
+                      to="/google-api"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Cloud className="item-icon" size={16} />
+                        <span className="item-name">Google API</span>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               )}
 
-              <button
-                className={`nav-item nav-group ${
-                  expandedItems.has('products') ? 'expanded' : ''
-                }`}
-                onClick={() => toggleExpanded('products')}
-              >
-                <div className="item-content">
-                  <Package className="item-icon" size={18} />
-                  <span className="item-name">Products Suit</span>
-                  <ChevronRight className={`expand-icon ${
+              {sectionHasPermissions(productPages) && (
+                <button
+                  className={`nav-item nav-group ${
                     expandedItems.has('products') ? 'expanded' : ''
-                  }`} size={14} />
-                </div>
-              </button>
+                  }`}
+                  onClick={() => toggleExpanded('products')}
+                >
+                  <div className="item-content">
+                    <Package className="item-icon" size={18} />
+                    <span className="item-name">Products Suit</span>
+                    <ChevronRight className={`expand-icon ${
+                      expandedItems.has('products') ? 'expanded' : ''
+                    }`} size={14} />
+                  </div>
+                </button>
+              )}
               
               {expandedItems.has('products') && (
                 <div className="sub-items">
-                  <Link 
-                    to="/catalogo-amazon"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Package className="item-icon" size={16} />
-                      <span className="item-name">Catálogo Amazon</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/publicaciones-ml"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <ShoppingBag className="item-icon" size={16} />
-                      <span className="item-name">Publicaciones ML</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    to="/stock-proveedores"
-                    className="nav-item sub-item"
-                    onClick={handleItemClick}
-                  >
-                    <div className="item-content">
-                      <Truck className="item-icon" size={16} />
-                      <span className="item-name">Stock Proveedores</span>
-                    </div>
-                  </Link>
+                  {hasPagePermission('catalogo-amazon') && (
+                    <Link 
+                      to="/catalogo-amazon"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Package className="item-icon" size={16} />
+                        <span className="item-name">Catálogo Amazon</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('publicaciones-ml') && (
+                    <Link 
+                      to="/publicaciones-ml"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <ShoppingBag className="item-icon" size={16} />
+                        <span className="item-name">Publicaciones ML</span>
+                      </div>
+                    </Link>
+                  )}
+                  {hasPagePermission('stock-proveedores') && (
+                    <Link 
+                      to="/stock-proveedores"
+                      className="nav-item sub-item"
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <Truck className="item-icon" size={16} />
+                        <span className="item-name">Stock Proveedores</span>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               )}
 
@@ -472,44 +617,25 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             </div>
           )}
 
-          {/* SUPER ADMIN Section - Solo para super_admin */}
-          {!isCollapsed && user?.roles?.includes('super_admin') && (
+          {/* Admin Section - Based on user permissions */}
+          {!isCollapsed && adminPages.filter(page => hasPagePermission(page.id)).length > 0 && (
             <div className="nav-section nav-bottom">
-              <div className="section-label">SUPER ADMIN</div>
+              <div className="section-label">ADMINISTRACIÓN</div>
               
-              <Link 
-                to="/admin"
-                className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
-                onClick={handleItemClick}
-              >
-                <div className="item-content">
-                  <Shield className="item-icon" size={18} />
-                  <span className="item-name">Panel Admin</span>
-                  <Crown className="item-badge badge-new" size={14} />
-                </div>
-              </Link>
-
-              <Link 
-                to="/admin/users"
-                className={`nav-item ${activeTab === 'admin/users' ? 'active' : ''}`}
-                onClick={handleItemClick}
-              >
-                <div className="item-content">
-                  <User className="item-icon" size={18} />
-                  <span className="item-name">Gestionar Usuarios</span>
-                </div>
-              </Link>
-
-              <Link 
-                to="/admin/system"
-                className={`nav-item ${activeTab === 'admin/system' ? 'active' : ''}`}
-                onClick={handleItemClick}
-              >
-                <div className="item-content">
-                  <Activity className="item-icon" size={18} />
-                  <span className="item-name">Monitor Sistema</span>
-                </div>
-              </Link>
+              {adminPages.filter(page => hasPagePermission(page.id)).map(page => (
+                <Link 
+                  key={page.id}
+                  to={page.path}
+                  className={`nav-item ${activeTab === page.id.replace('admin-', '') || activeTab === page.path.replace('/', '') ? 'active' : ''}`}
+                  onClick={handleItemClick}
+                >
+                  <div className="item-content">
+                    <page.icon className="item-icon" size={18} />
+                    <span className="item-name">{page.name}</span>
+                    {page.id === 'admin-panel' && <Crown className="item-badge badge-new" size={14} />}
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </nav>
@@ -523,7 +649,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
             {!isCollapsed && (
               <div className="user-info">
                 <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
-                <div className="user-role">{user?.roles?.includes('super_admin') ? 'Super Admin' : 'Usuario'}</div>
+                <div className="user-role">{getRoleDisplayName()}</div>
               </div>
             )}
             {!isCollapsed && (

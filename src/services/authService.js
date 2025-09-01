@@ -241,6 +241,13 @@ class AuthService {
   }
 
   /**
+   * Get current auth token
+   */
+  getToken() {
+    return this.token;
+  }
+
+  /**
    * Check if user has specific permission for sales app
    */
   hasPermission(permissionType = 'read') {

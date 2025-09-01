@@ -63,12 +63,16 @@ const AdminDashboard = () => {
         }, 800);
     };
 
-    // Verificar permisos
-    if (!user?.roles?.includes('super_admin')) {
+    // Verificar permisos - usar sistema de permisos en lugar de roles hardcodeados
+    const hasAdminPanelPermission = user?.permissions?.some(perm => 
+        perm.startsWith('admin-panel:') || perm.startsWith('sales:')
+    ) || user?.roles?.includes('super_admin');
+
+    if (!hasAdminPanelPermission) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>
-                <p>Solo Super Administradores pueden acceder a este módulo.</p>
+                <p>No tienes permisos para acceder al panel de administración.</p>
             </div>
         );
     }

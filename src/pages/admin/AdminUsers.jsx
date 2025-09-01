@@ -75,24 +75,33 @@ const AdminUsers = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [permissionsLoading, setPermissionsLoading] = useState(true);
+    const [restrictedPages, setRestrictedPages] = useState([]);
+    const [originalRestrictedPages, setOriginalRestrictedPages] = useState([]);
 
     useEffect(() => {
-        if (!user?.roles?.includes('super_admin')) {
+        // Verificar permisos usando el mismo criterio que la validación principal
+        const hasAdminUsersPermission = user?.permissions?.some(perm => 
+            perm.startsWith('admin-users:') || perm.startsWith('sales:')
+        ) || user?.roles?.includes('super_admin');
+
+        if (!hasAdminUsersPermission) {
             return;
         }
         fetchUsers();
         fetchRolePermissions();
     }, [user]);
 
-    // Detectar cambios en los permisos para mostrar el botón de guardar
+    // Detectar cambios en los permisos y páginas restringidas para mostrar el botón de guardar
     useEffect(() => {
-        const hasChanges = JSON.stringify(rolePermissions) !== JSON.stringify(originalRolePermissions);
+        const hasPermissionChanges = JSON.stringify(rolePermissions) !== JSON.stringify(originalRolePermissions);
+        const hasRestrictedChanges = JSON.stringify(restrictedPages) !== JSON.stringify(originalRestrictedPages);
+        const hasChanges = hasPermissionChanges || hasRestrictedChanges;
         setHasUnsavedChanges(hasChanges);
         
         if (hasChanges) {
-            console.log('🔄 Changes detected in permissions');
+            console.log('🔄 Changes detected in permissions or restricted pages');
         }
-    }, [rolePermissions, originalRolePermissions]);
+    }, [rolePermissions, originalRolePermissions, restrictedPages, originalRestrictedPages]);
 
     const fetchRolePermissions = async () => {
         try {
@@ -122,6 +131,12 @@ const AdminUsers = () => {
                         setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
                         setOriginalRolePermissions(JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS)));
                         console.log('📋 Using default permissions (no valid saved data)');
+                    }
+                    
+                    // Cargar páginas restringidas si existen
+                    if (data.restricted_pages) {
+                        setRestrictedPages(data.restricted_pages);
+                        setOriginalRestrictedPages(JSON.parse(JSON.stringify(data.restricted_pages)));
                     }
                     setPermissionsLoading(false);
                 } else {
@@ -171,6 +186,36 @@ const AdminUsers = () => {
             }
         } catch (error) {
             console.error(`💥 Network Error saving permissions for ${role}:`, error);
+            return false;
+        }
+    };
+
+    const saveRestrictedPages = async (restrictedPagesData) => {
+        try {
+            console.log(`🔒 API Call: Saving ${restrictedPagesData.length} restricted pages`);
+            console.log(`📤 Restricted pages data:`, restrictedPagesData);
+            
+            const response = await fetch('http://localhost:8004/admin/save-restricted-pages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(restrictedPagesData)
+            });
+            
+            console.log(`📡 API Response status:`, response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ API Success for restricted pages:`, data);
+                return data;
+            } else {
+                const errorData = await response.text();
+                console.error(`❌ API Error for restricted pages:`, response.status, errorData);
+                return false;
+            }
+        } catch (error) {
+            console.error(`💥 Network Error saving restricted pages:`, error);
             return false;
         }
     };
@@ -487,6 +532,76 @@ const AdminUsers = () => {
         }));
     };
 
+    // Funciones para manejar páginas restringidas
+    const handleDropOnRestricted = async (e) => {
+        e.preventDefault();
+        if (draggedPage && !restrictedPages.includes(draggedPage.id)) {
+            const newRestrictedPages = [...restrictedPages, draggedPage.id];
+            console.log('🔒 Adding page to restricted:', draggedPage.id, 'New list:', newRestrictedPages);
+            
+            // Actualizar UI inmediatamente
+            setRestrictedPages(newRestrictedPages);
+            
+            // Remover de todos los roles excepto super_admin
+            const updatedRolePermissions = { ...rolePermissions };
+            Object.keys(updatedRolePermissions).forEach(role => {
+                if (role !== 'super_admin') {
+                    updatedRolePermissions[role] = updatedRolePermissions[role].filter(pageId => pageId !== draggedPage.id);
+                }
+            });
+            setRolePermissions(updatedRolePermissions);
+            
+            // ✅ Guardar en base de datos INMEDIATAMENTE
+            console.log('💾 Saving restricted pages to database:', newRestrictedPages);
+            await saveRestrictedPages(newRestrictedPages);
+        }
+        setDraggedPage(null);
+    };
+
+    const removePageFromRestricted = async (pageId) => {
+        console.log('🗑️ Removing page from restricted:', pageId);
+        const newRestrictedPages = restrictedPages.filter(id => id !== pageId);
+        console.log('📋 New restricted pages:', newRestrictedPages);
+        
+        // Actualizar UI inmediatamente
+        setRestrictedPages(newRestrictedPages);
+        
+        // ✅ Guardar en base de datos INMEDIATAMENTE
+        console.log('💾 Saving updated restricted pages to database:', newRestrictedPages);
+        await saveRestrictedPages(newRestrictedPages);
+    };
+
+    // Verificar si una página está restringida
+    const isPageRestricted = (pageId) => {
+        return restrictedPages.includes(pageId);
+    };
+
+    // Obtener páginas disponibles filtradas según el usuario
+    const getAvailablePages = () => {
+        const allPages = { ...AVAILABLE_PAGES };
+        
+        // Si no es super_admin, filtrar páginas restringidas
+        if (!user?.roles?.includes('super_admin')) {
+            Object.keys(allPages).forEach(category => {
+                allPages[category] = allPages[category].filter(page => !isPageRestricted(page.id));
+            });
+        }
+        
+        return allPages;
+    };
+
+    // Obtener roles visibles según el usuario
+    const getVisibleRoles = () => {
+        const allRoles = Object.keys(rolePermissions || DEFAULT_ROLE_PERMISSIONS);
+        
+        // Si no es super_admin, ocultar el rol super_admin
+        if (!user?.roles?.includes('super_admin')) {
+            return allRoles.filter(role => role !== 'super_admin');
+        }
+        
+        return allRoles;
+    };
+
     // Función para guardar todos los cambios pendientes
     const handleSaveChanges = async () => {
         if (!hasUnsavedChanges) return;
@@ -515,6 +630,13 @@ const AdminUsers = () => {
                 saveRolePermissions(role, permissions)
             );
             
+            // Guardar páginas restringidas si han cambiado
+            const restrictedChanged = JSON.stringify(restrictedPages) !== JSON.stringify(originalRestrictedPages);
+            if (restrictedChanged) {
+                console.log('🔒 Saving restricted pages:', restrictedPages);
+                savePromises.push(saveRestrictedPages(restrictedPages));
+            }
+            
             const results = await Promise.all(savePromises);
             const allSuccess = results.every(result => result !== false);
             
@@ -522,6 +644,7 @@ const AdminUsers = () => {
                 console.log('✅ All changes saved successfully');
                 // Actualizar las permissions originales para reflejar el nuevo estado guardado
                 setOriginalRolePermissions(JSON.parse(JSON.stringify(rolePermissions)));
+                setOriginalRestrictedPages(JSON.parse(JSON.stringify(restrictedPages)));
                 setHasUnsavedChanges(false);
             } else {
                 console.error('❌ Some changes failed to save');
@@ -541,12 +664,16 @@ const AdminUsers = () => {
         setRoleFilter('all');
     };
 
-    // Verificar permisos
-    if (!user?.roles?.includes('super_admin')) {
+    // Verificar permisos - usar sistema de permisos en lugar de roles hardcodeados
+    const hasAdminUsersPermission = user?.permissions?.some(perm => 
+        perm.startsWith('admin-users:') || perm.startsWith('sales:')
+    ) || user?.roles?.includes('super_admin');
+
+    if (!hasAdminUsersPermission) {
         return (
             <div className="admin-access-denied">
                 <h2>🚫 Acceso Denegado</h2>
-                <p>Solo Super Administradores pueden acceder a este módulo.</p>
+                <p>No tienes permisos para acceder a la gestión de usuarios.</p>
             </div>
         );
     }
@@ -749,7 +876,7 @@ const AdminUsers = () => {
                         <h3>📄 Páginas Disponibles</h3>
                         <p>Arrastra las páginas hacia los roles para asignar permisos</p>
                         
-                        {Object.entries(AVAILABLE_PAGES).map(([category, pages]) => (
+                        {Object.entries(getAvailablePages()).map(([category, pages]) => (
                             <div key={category} className="page-category">
                                 <h4>{category === 'main' ? '🏠 Principal' : 
                                     category === 'config' ? '⚙️ Configuración' : 
@@ -770,6 +897,45 @@ const AdminUsers = () => {
                                 </div>
                             </div>
                         ))}
+                        
+                        {/* Restricted Pages - Solo visible para super_admin */}
+                        {user?.roles?.includes('super_admin') && (
+                            <div className="restricted-pages-section">
+                                <h4>🚫 Páginas Restringidas</h4>
+                                <p>Solo Super Admin puede asignar estas páginas</p>
+                                <div 
+                                    className="restricted-pages-container"
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDropOnRestricted}
+                                >
+                                    {restrictedPages.length === 0 ? (
+                                        <div className="empty-restricted">
+                                            <span>📋 Arrastra páginas aquí para restringirlas</span>
+                                        </div>
+                                    ) : (
+                                        restrictedPages.map(pageId => {
+                                            const allPages = Object.values(AVAILABLE_PAGES).flat();
+                                            const page = allPages.find(p => p.id === pageId);
+                                            if (!page) return null;
+                                            
+                                            return (
+                                                <div key={pageId} className="restricted-page">
+                                                    <span className="page-icon">{page.icon}</span>
+                                                    <span className="page-name">{page.name}</span>
+                                                    <button
+                                                        onClick={() => removePageFromRestricted(pageId)}
+                                                        className="remove-btn"
+                                                        title="Quitar restricción"
+                                                    >
+                                                        ❌️
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Role Permissions */}
@@ -793,7 +959,9 @@ const AdminUsers = () => {
                                     <p>Cargando permisos...</p>
                                 </div>
                             ) : (
-                                Object.entries(rolePermissions || DEFAULT_ROLE_PERMISSIONS).map(([role, permissions]) => (
+                                getVisibleRoles().map(role => {
+                                    const permissions = rolePermissions?.[role] || [];
+                                    return (
                                 <div
                                     key={role}
                                     className="role-container"
@@ -831,7 +999,8 @@ const AdminUsers = () => {
                                         })}
                                     </div>
                                 </div>
-                                ))
+                                )
+                                })
                             )}
                         </div>
                     </div>
