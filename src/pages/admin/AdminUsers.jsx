@@ -28,6 +28,11 @@ const AVAILABLE_PAGES = {
         { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: '📦', path: '/catalogo-amazon' },
         { id: 'publicaciones-ml', name: 'Publicaciones ML', icon: '🛍️', path: '/publicaciones-ml' },
         { id: 'stock-proveedores', name: 'Stock Proveedores', icon: '🚚', path: '/stock-proveedores' }
+    ],
+    superadmin: [
+        { id: 'admin-panel', name: 'Panel Admin', icon: '🎛️', path: '/admin' },
+        { id: 'admin-users', name: 'Gestión de Usuarios', icon: '👥', path: '/admin/users' },
+        { id: 'admin-system', name: 'Monitor Sistema', icon: '⚙️', path: '/admin/system' }
     ]
 };
 
@@ -40,7 +45,7 @@ const USER_TYPES = {
 // Permisos por defecto para cada rol
 const DEFAULT_ROLE_PERMISSIONS = {
     // Usuarios Administrativos
-    'super_admin': ['admin', 'admin/users', 'admin/system', ...Object.values(AVAILABLE_PAGES).flat().map(p => p.id)],
+    'super_admin': [...Object.values(AVAILABLE_PAGES).flat().map(p => p.id)], // Super Admin tiene acceso a TODO
     'admin': ['dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes', 'ml-stores', 'ml-sync', 'control-consolidador', 'control-validador'],
     'asesor': ['dashboard', 'customers', 'control-reportes', 'quotes'],
     
@@ -62,17 +67,113 @@ const AdminUsers = () => {
     const [selectedRole, setSelectedRole] = useState('admin');
     const [draggedPage, setDraggedPage] = useState(null);
     const [rolePermissions, setRolePermissions] = useState(DEFAULT_ROLE_PERMISSIONS);
+    const [originalRolePermissions, setOriginalRolePermissions] = useState(DEFAULT_ROLE_PERMISSIONS);
     const [userPermissions, setUserPermissions] = useState({});
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
     const [toggleLoading, setToggleLoading] = useState(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [permissionsLoading, setPermissionsLoading] = useState(true);
 
     useEffect(() => {
         if (!user?.roles?.includes('super_admin')) {
             return;
         }
         fetchUsers();
+        fetchRolePermissions();
     }, [user]);
+
+    // Detectar cambios en los permisos para mostrar el botón de guardar
+    useEffect(() => {
+        const hasChanges = JSON.stringify(rolePermissions) !== JSON.stringify(originalRolePermissions);
+        setHasUnsavedChanges(hasChanges);
+        
+        if (hasChanges) {
+            console.log('🔄 Changes detected in permissions');
+        }
+    }, [rolePermissions, originalRolePermissions]);
+
+    const fetchRolePermissions = async () => {
+        try {
+            const response = await fetch('http://localhost:8004/admin/role-permissions', {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.permissions && Object.keys(data.permissions).length > 0 && !data.permissions.null) {
+                    // Filtrar cualquier entrada null
+                    const cleanPermissions = {};
+                    Object.entries(data.permissions).forEach(([role, perms]) => {
+                        if (role && role !== 'null') {
+                            cleanPermissions[role] = perms;
+                        }
+                    });
+                    
+                    if (Object.keys(cleanPermissions).length > 0) {
+                        setRolePermissions(cleanPermissions);
+                        setOriginalRolePermissions(JSON.parse(JSON.stringify(cleanPermissions))); // Copia profunda
+                        console.log('✅ Loaded saved permissions from database');
+                    } else {
+                        // Si no hay permisos válidos, usar los por defecto
+                        setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+                        setOriginalRolePermissions(JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS)));
+                        console.log('📋 Using default permissions (no valid saved data)');
+                    }
+                    setPermissionsLoading(false);
+                } else {
+                    // Usar permisos por defecto
+                    setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+                    setOriginalRolePermissions(JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS)));
+                    console.log('📋 Using default permissions');
+                    setPermissionsLoading(false);
+                }
+            } else {
+                // Si falla la API, usar permisos por defecto
+                setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+                console.log('📋 Using default permissions (API error)');
+                setPermissionsLoading(false);
+            }
+        } catch (error) {
+            console.error('Error fetching role permissions:', error);
+            // En caso de error, usar permisos por defecto
+            setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+            setPermissionsLoading(false);
+        }
+    };
+
+    const saveRolePermissions = async (role, permissions) => {
+        try {
+            console.log(`🚀 API Call: Saving ${permissions.length} permissions for role ${role}`);
+            console.log(`📤 Permissions data:`, permissions);
+            
+            const response = await fetch(`http://localhost:8004/admin/save-role-permissions?role_name=${role}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(permissions)
+            });
+            
+            console.log(`📡 API Response status:`, response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ API Success for ${role}:`, data);
+                return data;
+            } else {
+                const errorData = await response.text();
+                console.error(`❌ API Error for ${role}:`, response.status, errorData);
+                return false;
+            }
+        } catch (error) {
+            console.error(`💥 Network Error saving permissions for ${role}:`, error);
+            return false;
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -334,13 +435,19 @@ const AdminUsers = () => {
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const handleDropOnRole = (e, targetRole) => {
+    const handleDropOnRole = async (e, targetRole) => {
         e.preventDefault();
         if (draggedPage && !rolePermissions[targetRole].includes(draggedPage.id)) {
+            const newPermissions = [...(rolePermissions[targetRole] || []), draggedPage.id];
+            
+            // Actualizar UI inmediatamente
             setRolePermissions(prev => ({
                 ...prev,
-                [targetRole]: [...prev[targetRole], draggedPage.id]
+                [targetRole]: newPermissions
             }));
+            
+            // Guardar en base de datos
+            await saveRolePermissions(targetRole, newPermissions);
         }
         setDraggedPage(null);
     };
@@ -356,11 +463,21 @@ const AdminUsers = () => {
         setDraggedPage(null);
     };
 
-    const removePageFromRole = (pageId, role) => {
+    const removePageFromRole = async (pageId, role) => {
+        console.log(`🗑️ Removing page ${pageId} from role ${role}`);
+        const newPermissions = (rolePermissions[role] || []).filter(id => id !== pageId);
+        console.log(`📋 New permissions for ${role}:`, newPermissions);
+        
+        // Actualizar UI inmediatamente
         setRolePermissions(prev => ({
             ...prev,
-            [role]: prev[role].filter(id => id !== pageId)
+            [role]: newPermissions
         }));
+        
+        // Guardar en base de datos
+        console.log(`💾 Saving permissions for ${role}...`);
+        const result = await saveRolePermissions(role, newPermissions);
+        console.log(`✅ Save result:`, result);
     };
 
     const removePageFromUser = (pageId, userId) => {
@@ -368,6 +485,54 @@ const AdminUsers = () => {
             ...prev,
             [userId]: (prev[userId] || []).filter(id => id !== pageId)
         }));
+    };
+
+    // Función para guardar todos los cambios pendientes
+    const handleSaveChanges = async () => {
+        if (!hasUnsavedChanges) return;
+        
+        setIsSaving(true);
+        console.log('💾 Saving all permission changes...');
+        
+        try {
+            // Obtener todos los roles que han cambiado
+            const changedRoles = [];
+            Object.keys(rolePermissions).forEach(role => {
+                const current = JSON.stringify(rolePermissions[role] || []);
+                const original = JSON.stringify(originalRolePermissions[role] || []);
+                if (current !== original) {
+                    changedRoles.push({
+                        role,
+                        permissions: rolePermissions[role] || []
+                    });
+                }
+            });
+            
+            console.log(`🔄 Found ${changedRoles.length} roles with changes:`, changedRoles.map(r => r.role));
+            
+            // Guardar cada rol modificado
+            const savePromises = changedRoles.map(({ role, permissions }) => 
+                saveRolePermissions(role, permissions)
+            );
+            
+            const results = await Promise.all(savePromises);
+            const allSuccess = results.every(result => result !== false);
+            
+            if (allSuccess) {
+                console.log('✅ All changes saved successfully');
+                // Actualizar las permissions originales para reflejar el nuevo estado guardado
+                setOriginalRolePermissions(JSON.parse(JSON.stringify(rolePermissions)));
+                setHasUnsavedChanges(false);
+            } else {
+                console.error('❌ Some changes failed to save');
+                alert('Error: No se pudieron guardar todos los cambios. Revisa la consola para más detalles.');
+            }
+        } catch (error) {
+            console.error('💥 Error saving changes:', error);
+            alert('Error: No se pudieron guardar los cambios. Revisa la conexión con la base de datos.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Reset filter when changing tabs
@@ -588,7 +753,8 @@ const AdminUsers = () => {
                             <div key={category} className="page-category">
                                 <h4>{category === 'main' ? '🏠 Principal' : 
                                     category === 'config' ? '⚙️ Configuración' : 
-                                    category === 'control' ? '📊 Control Suite' : '📦 Products Suite'}</h4>
+                                    category === 'control' ? '📊 Control Suite' : 
+                                    category === 'products' ? '📦 Products Suite' : '👑 Super Admin'}</h4>
                                 <div className="page-grid">
                                     {pages.map(page => (
                                         <div
@@ -608,9 +774,26 @@ const AdminUsers = () => {
 
                     {/* Role Permissions */}
                     <div className="permissions-section">
-                        <h3>🔒 Permisos por Rol</h3>
+                        <div className="permissions-header">
+                            <h3>🔒 Permisos por Rol</h3>
+                            {hasUnsavedChanges && (
+                                <button 
+                                    className="save-changes-btn"
+                                    onClick={handleSaveChanges}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? '💾 Guardando...' : '💾 Guardar Cambios'}
+                                </button>
+                            )}
+                        </div>
                         <div className="roles-grid">
-                            {Object.entries(rolePermissions).map(([role, permissions]) => (
+                            {permissionsLoading ? (
+                                <div className="permissions-loading">
+                                    <div className="spinner"></div>
+                                    <p>Cargando permisos...</p>
+                                </div>
+                            ) : (
+                                Object.entries(rolePermissions || DEFAULT_ROLE_PERMISSIONS).map(([role, permissions]) => (
                                 <div
                                     key={role}
                                     className="role-container"
@@ -624,10 +807,10 @@ const AdminUsers = () => {
                                             role === 'marketplace' ? '🏪 Marketplace' :
                                             role === 'dropshipper' ? '📦 Dropshipper' :
                                             role === 'proveedor' ? '🚚 Proveedor' : role}</h4>
-                                        <span className="permission-count">{permissions.length} páginas</span>
+                                        <span className="permission-count">{permissions && Array.isArray(permissions) ? permissions.length : 0} páginas</span>
                                     </div>
                                     <div className="assigned-pages">
-                                        {permissions.map(pageId => {
+                                        {(permissions || []).map(pageId => {
                                             const allPages = Object.values(AVAILABLE_PAGES).flat();
                                             const page = allPages.find(p => p.id === pageId);
                                             if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
@@ -648,7 +831,8 @@ const AdminUsers = () => {
                                         })}
                                     </div>
                                 </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
