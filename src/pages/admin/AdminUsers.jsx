@@ -228,40 +228,42 @@ const AdminUsers = () => {
         setShowEditModal(false);
         setSelectedUser(null);
         
-        // API call en background (sin blocking UI)
+        // API call en background (sin blocking UI) - CORREGIDO: usar ruta correcta v2
         try {
-            const response = await fetch(`https://auth-api.dropux.co/admin/users/${updatedUser.id}/assign-role`, {
+            console.log('🔄 Updating user role:', updatedUser.id, 'to:', updatedUser.user_type);
+            
+            // RUTA CORREGIDA: /admin/assign-role con parámetros query
+            const response = await fetch(`https://auth-api.dropux.co/admin/assign-role?user_id=${updatedUser.id}&role_name=${updatedUser.user_type}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_type: updatedUser.user_type,
-                    is_verified: true
-                })
+                }
             });
             
             if (!response.ok) {
-                // Intentar con localhost
-                const localResponse = await fetch(`http://localhost:8004/admin/users/${updatedUser.id}/assign-role`, {
+                console.log('Production API failed, trying localhost...');
+                // Intentar con localhost - RUTA CORREGIDA
+                const localResponse = await fetch(`http://localhost:8004/admin/assign-role?user_id=${updatedUser.id}&role_name=${updatedUser.user_type}`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_type: updatedUser.user_type,
-                        is_verified: true
-                    })
+                    }
                 });
                 
-                if (!localResponse.ok) {
-                    console.warn('API not available, updating locally only');
+                if (localResponse.ok) {
+                    console.log('✅ Role updated successfully in database');
+                } else {
+                    console.error('❌ Failed to update role in database');
+                    const errorText = await localResponse.text();
+                    console.error('Error response:', errorText);
                 }
+            } else {
+                console.log('✅ Role updated successfully in production database');
             }
         } catch (error) {
-            console.error('Error updating user:', error);
+            console.error('❌ Error updating user role:', error);
         }
     };
 
