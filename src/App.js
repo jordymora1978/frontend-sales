@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppWithRoutes from './components/AppWithRoutes';
@@ -6,6 +6,8 @@ import Login from './components/Login.jsx';
 import EnterpriseRegister from './components/EnterpriseRegister.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
 import ResetPassword from './components/ResetPassword.jsx';
+import InviteRegister from './pages/InviteRegister.jsx';
+import AdminRegister from './pages/AdminRegister.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -79,6 +81,10 @@ const AppRoutes = () => {
           <Route path="/auth/register" element={<AuthenticatedAuth />} />
           <Route path="/auth/forgot-password" element={<AuthenticatedAuth />} />
           <Route path="/auth/reset-password" element={<AuthenticatedAuth />} />
+          {/* Invitation registration route */}
+          <Route path="/invite/:token" element={<InviteRegister />} />
+          {/* Admin registration route */}
+          <Route path="/admin-register" element={<AdminRegister />} />
           {/* Legacy routes - redirect to new structure */}
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
