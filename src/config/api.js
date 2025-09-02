@@ -3,16 +3,20 @@
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Production URLs (default) - TEMPORALMENTE usando localhost por Railway caído
+// Production URLs (default)
 const PRODUCTION_CONFIG = {
-  AUTH_API_URL: 'http://localhost:8004',
+  AUTH_API_URL: 'https://auth-api.dropux.co',
   SALES_API_URL: 'https://api-sales.dropux.co',
+  GOOGLE_API_URL: 'https://google-api.dropux.co',
+  CONTROL_API_URL: 'https://control-api.dropux.co',
 };
 
 // Development URLs (only when explicitly enabled)
 const DEVELOPMENT_CONFIG = {
   AUTH_API_URL: 'http://localhost:8004',
   SALES_API_URL: 'http://localhost:8001',
+  GOOGLE_API_URL: 'http://localhost:8000',
+  CONTROL_API_URL: 'http://localhost:8002',
 };
 
 // Override logic: Use production by default, only use development if explicitly set
@@ -43,5 +47,7 @@ const config = getAPIConfig();
 
 export const AUTH_API_URL = config.AUTH_API_URL;
 export const SALES_API_URL = config.SALES_API_URL;
+export const GOOGLE_API_URL = config.GOOGLE_API_URL;
+export const CONTROL_API_URL = config.CONTROL_API_URL;
 
 export default config;
