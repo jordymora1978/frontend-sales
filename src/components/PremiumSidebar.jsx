@@ -35,6 +35,33 @@ import './PremiumSidebar.css';
 import { useAuth } from '../context/AuthContext';
 import authService from '../services/authService';
 
+// 🚀 SISTEMA SIMPLE Y CONFIABLE - PÁGINAS POR TIPO DE USUARIO
+const PAGES_BY_USER_TYPE = {
+  'super_admin': [
+    'dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes',
+    'ml-stores', 'ml-sync', 'apis-conexiones', 'mis-etiquetas',
+    'control-consolidador', 'control-validador', 'control-trm', 'control-gmail-drive', 'google-api',
+    'catalogo-amazon', 'publicaciones-ml', 'stock-proveedores',
+    'admin-panel', 'admin-users', 'admin-system'
+  ],
+  'admin': [
+    'dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes',
+    'admin-users', 'admin-system'
+  ],
+  'asesor': [
+    'dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes'
+  ],
+  'marketplace': [
+    'dashboard', 'orders2_0', 'ml-stores', 'ml-sync', 'publicaciones-ml'
+  ],
+  'dropshipper': [
+    'dashboard', 'orders2_0', 'customers', 'catalogo-amazon', 'stock-proveedores'
+  ],
+  'proveedor': [
+    'dashboard', 'stock-proveedores', 'control-reportes'
+  ]
+};
+
 // Theme Context para manejo profesional
 export const ThemeContext = createContext();
 
@@ -68,8 +95,6 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [internalIsMobile, setInternalIsMobile] = useState(false);
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
-  const [userPagePermissions, setUserPagePermissions] = useState([]);
-  const [permissionsLoading, setPermissionsLoading] = useState(true);
   const { theme, toggleTheme } = useContext(ThemeContext) || {};
   const { user, logout, refreshUser } = useAuth();
 
@@ -94,68 +119,15 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     }
   }, [isMobile]);
 
-  // Load user permissions from backend
-  useEffect(() => {
-    const fetchUserPermissions = async () => {
-      if (!user?.roles || user.roles.length === 0) {
-        console.log('🔍 DEBUG: No user roles found');
-        setUserPagePermissions([]);
-        setPermissionsLoading(false);
-        return;
-      }
+  // 🚀 ELIMINADO: Todo el sistema complejo de API permissions
 
-      try {
-        setPermissionsLoading(true);
-        console.log('🔍 DEBUG: User roles:', user.roles);
-        
-        // Call the same endpoint that AdminUsers.jsx uses
-        const response = await fetch(`${process.env.REACT_APP_AUTH_API_URL}/admin/role-permissions`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authService.getToken()}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('🔍 DEBUG: Permissions data from API:', data);
-          const userRole = user.roles[0]; // Get first role (users typically have one role)
-          console.log('🔍 DEBUG: User role:', userRole);
-          const rolePermissions = data.permissions[userRole] || [];
-          console.log('🔍 DEBUG: Role permissions for', userRole, ':', rolePermissions);
-          setUserPagePermissions(rolePermissions);
-        } else {
-          console.error('Failed to fetch user permissions');
-          setUserPagePermissions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching permissions:', error);
-        setUserPagePermissions([]);
-      } finally {
-        setPermissionsLoading(false);
-      }
-    };
-
-    fetchUserPermissions();
-  }, [user]);
-
-  // Function to check if user has permission for a page
+  // 🚀 SISTEMA SIMPLE: Check if user has permission for a page
   const hasPagePermission = (pageId) => {
-    // Super admin has access to all pages
-    if (user?.roles?.includes('super_admin')) {
-      return true;
-    }
+    if (!user) return false;
     
-    // 🚀 FIX PARPADEO: Durante loading, mostrar páginas básicas para evitar sidebar vacío
-    if (permissionsLoading) {
-      // Páginas básicas que todos los usuarios autenticados pueden ver
-      const basicPages = ['dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes'];
-      return basicPages.includes(pageId);
-    }
-    
-    // Check if user has specific page permission
-    return userPagePermissions.includes(pageId);
+    // Get user pages from static definition
+    const userPages = PAGES_BY_USER_TYPE[user?.user_type] || PAGES_BY_USER_TYPE['asesor'];
+    return userPages.includes(pageId);
   };
 
   // Check if a section has any pages with permissions
