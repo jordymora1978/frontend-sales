@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AUTH_API_URL } from '../../config/api.js';
 import { ENDPOINTS } from '../../config/endpoints.js';
@@ -60,7 +60,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
 const AdminUsers = () => {
     const { user } = useAuth();
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // 🚀 PROFESIONAL: Sin loading inicial innecesario
     const [selectedUser, setSelectedUser] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -195,11 +195,17 @@ const AdminUsers = () => {
         }
         
         console.log('📡 Loading data from server...');
+        
+        // 🚀 PROFESIONAL: Cargar datos sin loading innecesario para datos pequeños
         Promise.all([
             fetchUsers(),
             fetchRolePermissions(),
-            loadRestrictedPagesFixed() // 🔧 FIXED: Cargar páginas restringidas
-        ]).catch(error => {
+            loadRestrictedPagesFixed()
+        ]).then(() => {
+            // Datos cargados correctamente
+            setLoading(false);
+            setPermissionsLoading(false);
+        }).catch(error => {
             console.error('Error loading data:', error);
             setLoading(false);
             setPermissionsLoading(false);
@@ -631,8 +637,8 @@ const AdminUsers = () => {
         return restrictedPages.includes(pageId);
     };
 
-    // Obtener páginas disponibles filtradas según el usuario
-    const getAvailablePages = () => {
+    // 🚀 PROFESIONAL: Páginas filtradas computadas una vez - NO HAY PARPADEO
+    const availablePages = useMemo(() => {
         const allPages = { ...AVAILABLE_PAGES };
         
         const isSuperAdmin = user?.roles?.includes('super_admin') || 
@@ -649,7 +655,7 @@ const AdminUsers = () => {
         }
         
         return allPages;
-    };
+    }, [user, restrictedPages]); // Solo recalcular cuando cambien user o restrictedPages
 
     // Obtener roles visibles según el usuario
     const getVisibleRoles = () => {
@@ -1004,7 +1010,7 @@ const AdminUsers = () => {
                         <h3>📄 Páginas Disponibles</h3>
                         <p>Arrastra las páginas hacia los roles para asignar permisos</p>
                         
-                        {Object.entries(getAvailablePages()).map(([category, pages]) => (
+                        {Object.entries(availablePages).map(([category, pages]) => (
                             <div key={category} className="page-category">
                                 <h4>{category === 'main' ? '🏠 Principal' : 
                                     category === 'config' ? '⚙️ Configuración' : 
