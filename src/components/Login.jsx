@@ -6,20 +6,24 @@ import DropuxLogo from './DropuxLogo';
 const Login = ({ onLogin, onShowRegister, onShowForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading, error, setError } = useAuth();
+  const [isLoading, setIsLoading] = useState(false); // ⚡ Estado local de loading
+  const { login, error, setError } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true); // ⚡ Activar loading local
 
     try {
       const userData = await login(email, password);
       if (onLogin) {
         onLogin(userData);
       }
+      // No necesitamos setIsLoading(false) aquí porque la página se recargará
     } catch (err) {
       // Error is handled by AuthContext
       console.error('Login failed:', err);
+      setIsLoading(false); // ⚡ Desactivar loading si hay error
     }
   };
 
@@ -89,10 +93,10 @@ const Login = ({ onLogin, onShowRegister, onShowForgotPassword }) => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-2.5 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-200 font-semibold text-base shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+            {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
           </button>
         </form>
 

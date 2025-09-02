@@ -15,13 +15,17 @@ class ApiService {
       const expiry = new Date(storedExpiry);
       
       if (now >= expiry) {
-        console.log('🔒 Token expired, clearing auth');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔒 Token expired, clearing auth');
+        }
         this.logout();
         return;
       }
       
       this.token = storedToken;
-      console.log('✅ Auth restored from localStorage');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Auth restored from localStorage');
+      }
     } else {
       this.token = null;
     }
@@ -41,21 +45,23 @@ class ApiService {
       config.headers.Authorization = `Bearer ${this.token}`;
     }
 
-    console.log('🚀 API Request:', {
-      url,
-      method: config.method || 'GET',
-      headers: config.headers,
-      body: config.body
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 API Request:', {
+        url,
+        method: config.method || 'GET'
+        // Headers and body excluded for security
+      });
+    }
 
     try {
       const response = await fetch(url, config);
       
-      console.log('📡 Response Status:', response.status);
-      console.log('📡 Response Headers:', response.headers);
-      
       const responseText = await response.text();
-      console.log('📡 Response Body:', responseText);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📡 Response Status:', response.status);
+        console.log('📡 Response Body (truncated):', responseText.substring(0, 200) + '...');
+      }
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -74,11 +80,15 @@ class ApiService {
       try {
         return JSON.parse(responseText);
       } catch {
-        console.error('Failed to parse JSON:', responseText);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to parse JSON:', responseText);
+        }
         throw new Error('Invalid JSON response from server');
       }
     } catch (error) {
-      console.error('❌ API Request failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ API Request failed:', error);
+      }
       throw error;
     }
   }
@@ -99,7 +109,9 @@ class ApiService {
       localStorage.setItem('token_expiry', expiry.toISOString());
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      console.log(`🔑 Token stored, expires at: ${expiry.toLocaleString()}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔑 Token stored, expires at: ${expiry.toLocaleString()}`);
+      }
     }
 
     return response;
@@ -120,7 +132,9 @@ class ApiService {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('token_expiry');
     localStorage.removeItem('user');
-    console.log('🚪 Logged out, auth cleared');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚪 Logged out, auth cleared');
+    }
   }
 
   async getMLStores() {
@@ -152,7 +166,9 @@ class ApiService {
     const expiry = new Date(storedExpiry);
     
     if (now >= expiry) {
-      console.log('🔒 Token expired during check');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔒 Token expired during check');
+      }
       this.logout();
       return false;
     }
@@ -168,7 +184,9 @@ class ApiService {
     const expiry = new Date(storedExpiry);
     
     if (now >= expiry) {
-      console.log('🔒 Auto-logout: Token expired');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔒 Auto-logout: Token expired');
+      }
       this.logout();
       return false;
     }

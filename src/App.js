@@ -27,14 +27,11 @@ const LoadingScreen = () => (
 );
 
 const AuthenticatedAuth = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated } = useAuth(); // ⚡ EMPRESARIAL: Sin loading
   const location = useLocation();
   const navigate = useNavigate();
   
-  if (loading) {
-    return <LoadingScreen />;
-  }
-  
+  // ⚡ EMPRESARIAL: Sin loading screen - Login instantáneo
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
@@ -73,35 +70,33 @@ const AuthenticatedAuth = () => {
 
 const AppRoutes = () => {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          {/* Authentication routes - both old and new for compatibility */}
-          <Route path="/auth/login" element={<AuthenticatedAuth />} />
-          <Route path="/auth/register" element={<AuthenticatedAuth />} />
-          <Route path="/auth/forgot-password" element={<AuthenticatedAuth />} />
-          <Route path="/auth/reset-password" element={<AuthenticatedAuth />} />
-          {/* Invitation registration route */}
-          <Route path="/invite/:token" element={<InviteRegister />} />
-          {/* Admin registration route */}
-          <Route path="/admin-register" element={<AdminRegister />} />
-          {/* Legacy routes - redirect to new structure */}
-          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-          <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
-          <Route path="/reset-password" element={<RedirectWithParams to="/auth/reset-password" />} />
-          {/* Protected application routes */}
-          <Route 
-            path="/*" 
-            element={
-              <ProtectedRoute>
-                <AppWithRoutes />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </div>
-    </Router>
+    <div className="App">
+      <Routes>
+        {/* Authentication routes - both old and new for compatibility */}
+        <Route path="/auth/login" element={<AuthenticatedAuth />} />
+        <Route path="/auth/register" element={<AuthenticatedAuth />} />
+        <Route path="/auth/forgot-password" element={<AuthenticatedAuth />} />
+        <Route path="/auth/reset-password" element={<AuthenticatedAuth />} />
+        {/* Invitation registration route */}
+        <Route path="/invite/:token" element={<InviteRegister />} />
+        {/* Admin registration route */}
+        <Route path="/admin-register" element={<AdminRegister />} />
+        {/* Legacy routes - redirect to new structure */}
+        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+        <Route path="/register" element={<Navigate to="/auth/register" replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
+        <Route path="/reset-password" element={<RedirectWithParams to="/auth/reset-password" />} />
+        {/* Protected application routes */}
+        <Route 
+          path="/*" 
+          element={
+            <ProtectedRoute>
+              <AppWithRoutes />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
+    </div>
   );
 };
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { GOOGLE_API_URL } from '../config/api.js';
+import { ENDPOINTS } from '../config/endpoints.js';
 import { 
   Mail, 
   Settings, 
@@ -74,7 +76,7 @@ const GoogleAPI = () => {
 
   const checkGmailSetup = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/google-api/setup/status');
+      const response = await fetch(`${GOOGLE_API_URL}${ENDPOINTS.GOOGLE_API.SETUP_STATUS}`);
       if (response.ok) {
         const data = await response.json();
         setIsConfigured(data.configured);
@@ -88,7 +90,7 @@ const GoogleAPI = () => {
 
   const startOAuthFlow = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/google-api/auth/start');
+      const response = await fetch(`${GOOGLE_API_URL}${ENDPOINTS.GOOGLE_API.AUTH_START}`);
       if (response.ok) {
         const data = await response.json();
         setAuthUrl(data.auth_url);
@@ -103,7 +105,7 @@ const GoogleAPI = () => {
 
   const verifyConnection = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/google-api/auth/verify');
+      const response = await fetch(`${GOOGLE_API_URL}${ENDPOINTS.GOOGLE_API.AUTH_VERIFY}`);
       if (response.ok) {
         const data = await response.json();
         if (data.connected) {
@@ -126,7 +128,7 @@ const GoogleAPI = () => {
     setProgressStats({ emailsFound: 0, emailsProcessed: 0, attachmentsProcessed: 0, recordsUpdated: 0, errors: 0 });
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/google-api/process/emails', {
+      const response = await fetch(`${GOOGLE_API_URL}${ENDPOINTS.GOOGLE_API.PROCESS_EMAILS}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -168,7 +170,7 @@ const GoogleAPI = () => {
 
   const loadProcessedEmails = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/google-api/audit/emails?limit=50');
+      const response = await fetch(`${GOOGLE_API_URL}${ENDPOINTS.GOOGLE_API.AUDIT_EMAILS}?limit=50`);
       if (response.ok) {
         const data = await response.json();
         setProcessedEmails(data.emails || []);

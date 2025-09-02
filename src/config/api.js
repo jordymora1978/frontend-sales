@@ -1,5 +1,6 @@
 // API Configuration for Sales Frontend
 // Centralized configuration to avoid environment variable conflicts
+// Updated: Sep 2, 2025 - Fixed production AUTH_API_URL
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 

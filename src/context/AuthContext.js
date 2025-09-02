@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { BrowserRouter as Router, useNavigate } from 'react-router-dom';
 // Use real auth service for production
 // import authService from '../services/mockAuthService';
 import authService from '../services/authService';
@@ -19,60 +20,32 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
+const AuthProviderInner = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // ⚡ EMPRESARIAL: Sin loading inicial
   const [error, setError] = useState(null);
 
-  // Initialize authentication state
+  // ⚡ EMPRESARIAL: Carga instantánea de usuario desde cache
   useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  const initializeAuth = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Check if we have tokens in localStorage
-      const token = localStorage.getItem('auth_token');
-      const userData = localStorage.getItem('user_data');
-      
-      if (token && userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          
-          // Validate token is not expired and user data is valid
-          const currentUser = await authService.getCurrentUser();
-          if (currentUser) {
-            setUser(currentUser);
-          } else {
-            // Token is invalid, clear everything
-            localStorage.clear();
-            setUser(null);
-          }
-        } catch (parseError) {
-          console.error('Failed to parse user data:', parseError);
-          setUser(null);
-          localStorage.removeItem('user_data');
-        }
-      } else {
-        setUser(null);
+    const cachedUser = localStorage.getItem('user_data');
+    const token = localStorage.getItem('auth_token');
+    
+    if (cachedUser && token) {
+      try {
+        setUser(JSON.parse(cachedUser)); // ⚡ Usuario disponible inmediatamente
+      } catch (e) {
+        console.error('Failed to parse cached user');
+        localStorage.removeItem('user_data');
       }
-    } catch (error) {
-      console.error('Auth initialization error:', error);
-      setError('Failed to initialize authentication');
-      setUser(null);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
   const login = async (email, password) => {
     try {
-      setLoading(true);
       setError(null);
       
+      // ✅ REVERTIDO: Login normal con timeout rápido de 3 segundos
       const response = await authService.login(email, password);
       const userData = response.user || response;
       setUser(userData);
@@ -82,33 +55,45 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', error);
       setError(error.message || 'Login failed');
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await authService.logout();
-      setUser(null);
-      setError(null);
-      // Clear all localStorage
-      localStorage.clear();
-      sessionStorage.clear();
-      // Redirect to login
-      window.location.href = '/auth/login';
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout API fails, clear local state
-      setUser(null);
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = '/auth/login';
-    } finally {
-      setLoading(false);
-    }
+  const logout = () => {
+    // ⚡ EMPRESARIAL: Logout instantáneo sin recarga de página
+    setUser(null);
+    setError(null);
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // ⚡ NAVEGACIÓN SPA INSTANTÁNEA (0 segundos)
+    navigate('/auth/login', { replace: true });
+    
+    // API cleanup en background (no bloquea)
+    authService.logout().catch(() => {
+      console.log('Background logout API cleanup failed');
+    });
   };
+
+  // ⚡ EMPRESARIAL: Logout automático a las 23:59 hora local
+  useEffect(() => {
+    if (!user) return; // Solo si hay usuario logueado
+    
+    const checkEndOfWorkDay = () => {
+      const now = new Date(); // Hora local del usuario
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      
+      // Logout automático a las 23:59
+      if (hour === 23 && minute === 59) {
+        logout();
+        alert('Fin del día laboral. Sesión cerrada automáticamente a las 23:59.');
+      }
+    };
+    
+    // Verificar cada minuto
+    const interval = setInterval(checkEndOfWorkDay, 60000);
+    return () => clearInterval(interval);
+  }, [user]); // ⚡ Removí logout de las dependencias para evitar el error
 
   // Add protection against infinite loops
   useEffect(() => {
@@ -172,5 +157,12 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+// ⚡ EMPRESARIAL: Wrapper para Router
+export const AuthProvider = ({ children }) => (
+  <Router>
+    <AuthProviderInner>{children}</AuthProviderInner>
+  </Router>
+);
 
 export default AuthContext;

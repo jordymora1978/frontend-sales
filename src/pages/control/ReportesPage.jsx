@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { CONTROL_API_URL } from '../../config/api.js';
+import { ENDPOINTS } from '../../config/endpoints.js';
 import { 
   Download, 
   FileText, 
@@ -77,10 +79,9 @@ const ReportesPage = () => {
       });
 
       // Llamada real a la API del backend de Control
-      // Usar directamente la URL del backend de control
-      const controlApiUrl = 'http://localhost:8002';
+      // ✅ EMPRESARIAL: Sin hardcode
       // Cada reporte tiene su propio endpoint
-      const response = await fetch(`${controlApiUrl}/api/v1/reports2/${selectedReport}?${queryParams.toString()}`, {
+      const response = await fetch(`${CONTROL_API_URL}/api/v1/reports2/${selectedReport}?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -156,9 +157,8 @@ const ReportesPage = () => {
 
       console.log('📊 Exportando Excel desde backend real...');
 
-      // Llamada real al backend para exportar Excel
-      const controlApiUrl = 'http://localhost:8002';
-      const response = await fetch(`${controlApiUrl}/api/v1/reports2/${selectedReport}/export?${queryParams.toString()}`, {
+      // ✅ EMPRESARIAL: Llamada real al backend para exportar Excel
+      const response = await fetch(`${CONTROL_API_URL}/api/v1/reports2/${selectedReport}/export?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -192,9 +192,8 @@ const ReportesPage = () => {
 
       console.log('📊 Exportando CSV desde backend real...');
 
-      // Llamada real al backend para exportar CSV
-      const controlApiUrl = 'http://localhost:8002';
-      const response = await fetch(`${controlApiUrl}/api/v1/reports2/${selectedReport}/export?${queryParams.toString()}`, {
+      // ✅ EMPRESARIAL: Llamada real al backend para exportar CSV
+      const response = await fetch(`${CONTROL_API_URL}/api/v1/reports2/${selectedReport}/export?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Accept': 'text/csv'

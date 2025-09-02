@@ -49,6 +49,41 @@
   background: #6d28d9;
 }
 
+/* ✅ EMPRESARIAL: Notificaciones de guardado */
+.save-notification {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 12px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.save-notification.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.save-notification.error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .btn-primary:disabled {
   background: #9ca3af;
   cursor: not-allowed;

@@ -16,24 +16,32 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
     setError('');
 
-    console.log('🔑 Attempting login with:', formData.email);
+    // Login attempt started
 
     try {
       const response = await apiService.login(formData.email, formData.password);
-      console.log('✅ Login successful:', response);
+      // Login successful
       onLoginSuccess(response);
     } catch (error) {
-      console.error('❌ Login failed:', error.message);
+      // Login failed - check console for details in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Login failed:', error.message);
+      }
       
       // Mostrar el error real del servidor o un mensaje genérico
       if (error.message.includes('CORS')) {
         setError('Error de conexión con el servidor. Por favor intenta más tarde.');
       } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
         setError('No se puede conectar con el servidor. Verifica tu conexión.');
-      } else if (error.message.includes('401')) {
+      } else if (error.message.includes('401') || error.message.includes('Session expired')) {
         setError('Credenciales inválidas. Verifica tu email y contraseña.');
       } else {
-        setError(error.message || 'Error al iniciar sesión. Por favor intenta de nuevo.');
+        // No exponer mensajes del servidor - usar mensaje genérico seguro
+        setError('Error al iniciar sesión. Por favor intenta de nuevo.');
+        // Solo log en desarrollo
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Login error details:', error.message);
+        }
       }
     } finally {
       setLoading(false);
@@ -91,6 +99,9 @@ const Login = ({ onLoginSuccess }) => {
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-pressed={showPassword}
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -113,10 +124,12 @@ const Login = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Ambiente: {process.env.REACT_APP_ENV || 'development'}</p>
-          <p>API: {process.env.REACT_APP_API_URL || 'local'}</p>
-        </div>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="login-footer">
+            <p>Ambiente: {process.env.REACT_APP_ENV || 'development'}</p>
+            <p>API: {process.env.REACT_APP_API_URL || 'local'}</p>
+          </div>
+        )}
       </div>
 
       <style jsx>{`

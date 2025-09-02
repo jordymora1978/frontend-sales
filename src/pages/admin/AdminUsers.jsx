@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { AUTH_API_URL } from '../../config/api.js';
+import { ENDPOINTS } from '../../config/endpoints.js';
 import './AdminUsers.css';
 
 // Páginas disponibles del sistema
@@ -75,8 +77,112 @@ const AdminUsers = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [permissionsLoading, setPermissionsLoading] = useState(true);
+    const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'success' | 'error' | null
+
+    // 🔧 PAGES RESTRICTED FIX - SOLO ESTA PARTE ES NUEVA
     const [restrictedPages, setRestrictedPages] = useState([]);
     const [originalRestrictedPages, setOriginalRestrictedPages] = useState([]);
+
+    // Función de mapeo para páginas restringidas
+    const pageNameToId = (pageName) => {
+        const allPages = Object.values(AVAILABLE_PAGES).flat();
+        const page = allPages.find(p => p.name === pageName);
+        return page ? page.id : pageName;
+    };
+
+    const pageIdToName = (pageId) => {
+        const allPages = Object.values(AVAILABLE_PAGES).flat();
+        const page = allPages.find(p => p.id === pageId);
+        return page ? page.name : pageId;
+    };
+
+    // 🔧 FIXED: Función simple para cargar páginas restringidas
+    const loadRestrictedPagesFixed = async () => {
+        try {
+            console.log('🔧 [FIXED] Loading restricted pages from server...');
+            
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.ROLE_PERMISSIONS}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('🔧 [FIXED] Server response:', data);
+                
+                if (data.restricted_pages && Array.isArray(data.restricted_pages)) {
+                    // Convertir nombres a IDs
+                    const pageIds = data.restricted_pages.map(pageName => {
+                        const id = pageNameToId(pageName);
+                        console.log('🔧 [FIXED] Converting:', pageName, '→', id);
+                        return id;
+                    });
+                    
+                    console.log('🔧 [FIXED] Setting restricted pages:', pageIds);
+                    setRestrictedPages(pageIds);
+                    setOriginalRestrictedPages([...pageIds]);
+                    
+                    return true;
+                } else {
+                    console.log('🔧 [FIXED] No restricted pages found');
+                    setRestrictedPages([]);
+                    setOriginalRestrictedPages([]);
+                    return false;
+                }
+            } else {
+                console.error('🔧 [FIXED] Server error:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('🔧 [FIXED] Network error:', error);
+            return false;
+        }
+    };
+
+    // 🔧 FIXED: Función simple para guardar páginas restringidas  
+    const saveRestrictedPagesFixed = async (restrictedPagesData) => {
+        try {
+            // Convertir IDs a nombres
+            const pageNames = restrictedPagesData.map(pageId => pageIdToName(pageId));
+            console.log('🔧 [FIXED] Saving pages:', pageNames);
+            
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_RESTRICTED_PAGES}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pageNames)
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('🔧 [FIXED] Save successful:', data);
+                return true;
+            } else {
+                console.error('🔧 [FIXED] Save failed:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('🔧 [FIXED] Save error:', error);
+            return false;
+        }
+    };
+
+    // 🔧 FIXED: Manejar drag & drop para páginas restringidas
+    const handleDropOnRestrictedFixed = (pageId) => {
+        if (!restrictedPages.includes(pageId)) {
+            const newRestrictedPages = [...restrictedPages, pageId];
+            setRestrictedPages(newRestrictedPages);
+            
+            // Guardar inmediatamente
+            saveRestrictedPagesFixed(newRestrictedPages);
+        }
+    };
+
+    // 🔧 FIXED: Remover página de restringidas
+    const removePageFromRestrictedFixed = (pageId) => {
+        const newRestrictedPages = restrictedPages.filter(id => id !== pageId);
+        setRestrictedPages(newRestrictedPages);
+        
+        // Guardar inmediatamente
+        saveRestrictedPagesFixed(newRestrictedPages);
+    };
+    // FIN DEL FIX DE PÁGINAS RESTRINGIDAS
 
     useEffect(() => {
         // Verificar permisos usando el mismo criterio que la validación principal
@@ -87,25 +193,24 @@ const AdminUsers = () => {
         if (!hasAdminUsersPermission) {
             return;
         }
-        fetchUsers();
-        fetchRolePermissions();
-    }, [user]);
-
-    // Detectar cambios en los permisos y páginas restringidas para mostrar el botón de guardar
-    useEffect(() => {
-        const hasPermissionChanges = JSON.stringify(rolePermissions) !== JSON.stringify(originalRolePermissions);
-        const hasRestrictedChanges = JSON.stringify(restrictedPages) !== JSON.stringify(originalRestrictedPages);
-        const hasChanges = hasPermissionChanges || hasRestrictedChanges;
-        setHasUnsavedChanges(hasChanges);
         
-        if (hasChanges) {
-            console.log('🔄 Changes detected in permissions or restricted pages');
-        }
-    }, [rolePermissions, originalRolePermissions, restrictedPages, originalRestrictedPages]);
+        console.log('📡 Loading data from server...');
+        Promise.all([
+            fetchUsers(),
+            fetchRolePermissions(),
+            loadRestrictedPagesFixed() // 🔧 FIXED: Cargar páginas restringidas
+        ]).catch(error => {
+            console.error('Error loading data:', error);
+            setLoading(false);
+            setPermissionsLoading(false);
+        });
+    }, [user]);
 
     const fetchRolePermissions = async () => {
         try {
-            const response = await fetch('http://localhost:8004/admin/role-permissions', {
+            console.log('🔍 Fetching role permissions...');
+            
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.ROLE_PERMISSIONS}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -113,6 +218,7 @@ const AdminUsers = () => {
             
             if (response.ok) {
                 const data = await response.json();
+                
                 if (data.permissions && Object.keys(data.permissions).length > 0 && !data.permissions.null) {
                     // Filtrar cualquier entrada null
                     const cleanPermissions = {};
@@ -124,20 +230,14 @@ const AdminUsers = () => {
                     
                     if (Object.keys(cleanPermissions).length > 0) {
                         setRolePermissions(cleanPermissions);
-                        setOriginalRolePermissions(JSON.parse(JSON.stringify(cleanPermissions))); // Copia profunda
+                        setOriginalRolePermissions(JSON.parse(JSON.stringify(cleanPermissions)));
                         console.log('✅ Loaded saved permissions from database');
                     } else {
-                        // Si no hay permisos válidos, usar los por defecto
                         setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
                         setOriginalRolePermissions(JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS)));
                         console.log('📋 Using default permissions (no valid saved data)');
                     }
                     
-                    // Cargar páginas restringidas si existen
-                    if (data.restricted_pages) {
-                        setRestrictedPages(data.restricted_pages);
-                        setOriginalRestrictedPages(JSON.parse(JSON.stringify(data.restricted_pages)));
-                    }
                     setPermissionsLoading(false);
                 } else {
                     // Usar permisos por defecto
@@ -156,81 +256,18 @@ const AdminUsers = () => {
             console.error('Error fetching role permissions:', error);
             // En caso de error, usar permisos por defecto
             setRolePermissions(DEFAULT_ROLE_PERMISSIONS);
+            console.log('📋 Network error - using default permissions');
             setPermissionsLoading(false);
-        }
-    };
-
-    const saveRolePermissions = async (role, permissions) => {
-        try {
-            console.log(`🚀 API Call: Saving ${permissions.length} permissions for role ${role}`);
-            console.log(`📤 Permissions data:`, permissions);
-            
-            const response = await fetch(`http://localhost:8004/admin/save-role-permissions?role_name=${role}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(permissions)
-            });
-            
-            console.log(`📡 API Response status:`, response.status);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`✅ API Success for ${role}:`, data);
-                return data;
-            } else {
-                const errorData = await response.text();
-                console.error(`❌ API Error for ${role}:`, response.status, errorData);
-                return false;
-            }
-        } catch (error) {
-            console.error(`💥 Network Error saving permissions for ${role}:`, error);
-            return false;
-        }
-    };
-
-    const saveRestrictedPages = async (restrictedPagesData) => {
-        try {
-            console.log(`🔒 API Call: Saving ${restrictedPagesData.length} restricted pages`);
-            console.log(`📤 Restricted pages data:`, restrictedPagesData);
-            
-            const response = await fetch('http://localhost:8004/admin/save-restricted-pages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(restrictedPagesData)
-            });
-            
-            console.log(`📡 API Response status:`, response.status);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`✅ API Success for restricted pages:`, data);
-                return data;
-            } else {
-                const errorData = await response.text();
-                console.error(`❌ API Error for restricted pages:`, response.status, errorData);
-                return false;
-            }
-        } catch (error) {
-            console.error(`💥 Network Error saving restricted pages:`, error);
-            return false;
         }
     };
 
     const fetchUsers = async () => {
         try {
-            console.log('Fetching users...');
-            const authToken = localStorage.getItem('auth_token');
-            console.log('Auth token:', authToken ? 'Present' : 'Missing');
+            console.log('⚡ Fetching users...');
             
-            // Intentar con localhost para desarrollo primero
-            const localResponse = await fetch('http://localhost:8004/admin/users', {
+            const localResponse = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.USERS}`, {
                 headers: {
                     'Content-Type': 'application/json'
-                    // No enviamos auth token por ahora para testing
                 }
             });
             
@@ -281,6 +318,36 @@ const AdminUsers = () => {
         }
     };
 
+    const saveRolePermissions = async (role, permissions) => {
+        try {
+            console.log(`🚀 API Call: Saving ${permissions.length} permissions for role ${role}`);
+            console.log(`📤 Permissions data:`, permissions);
+            
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_ROLE_PERMISSIONS}?role_name=${role}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(permissions)
+            });
+            
+            console.log(`📡 API Response status:`, response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ API Success for ${role}:`, data);
+                return data;
+            } else {
+                const errorData = await response.text();
+                console.error(`❌ API Error for ${role}:`, response.status, errorData);
+                return false;
+            }
+        } catch (error) {
+            console.error(`💥 Network Error saving permissions for ${role}:`, error);
+            return false;
+        }
+    };
+
     const handleEditUser = (user) => {
         setSelectedUser(user);
         setShowEditModal(true);
@@ -304,7 +371,7 @@ const AdminUsers = () => {
             
             if (!response.ok) {
                 // Intentar con localhost
-                const localResponse = await fetch(`http://localhost:8004/admin/users/${userId}`, {
+                const localResponse = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.USERS}/${userId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -349,7 +416,7 @@ const AdminUsers = () => {
             
             if (!response.ok) {
                 // Intentar con localhost
-                const localResponse = await fetch(`http://localhost:8004/admin/users/${userId}/toggle-status`, {
+                const localResponse = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.USERS}/${userId}/toggle-status`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -374,11 +441,10 @@ const AdminUsers = () => {
         setShowEditModal(false);
         setSelectedUser(null);
         
-        // API call en background (sin blocking UI) - CORREGIDO: usar ruta correcta v2
+        // API call en background (sin blocking UI)
         try {
             console.log('🔄 Updating user role:', updatedUser.id, 'to:', updatedUser.user_type);
             
-            // RUTA CORREGIDA: /admin/assign-role con parámetros query
             const response = await fetch(`https://auth-api.dropux.co/admin/assign-role?user_id=${updatedUser.id}&role_name=${updatedUser.user_type}`, {
                 method: 'POST',
                 headers: {
@@ -389,8 +455,7 @@ const AdminUsers = () => {
             
             if (!response.ok) {
                 console.log('Production API failed, trying localhost...');
-                // Intentar con localhost - RUTA CORREGIDA
-                const localResponse = await fetch(`http://localhost:8004/admin/assign-role?user_id=${updatedUser.id}&role_name=${updatedUser.user_type}`, {
+                const localResponse = await fetch(`${AUTH_API_URL}/admin/assign-role?user_id=${updatedUser.id}&role_name=${updatedUser.user_type}`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -440,7 +505,6 @@ const AdminUsers = () => {
     // Función para asignar rol por defecto a usuarios sin rol
     const getUserWithDefaultRole = (user) => {
         if (!user.user_type || user.user_type === null) {
-            // Usuarios sin rol se asignan como 'asesor' por defecto (administrativos)
             return { ...user, user_type: 'asesor', is_verified: false };
         }
         return user;
@@ -450,13 +514,11 @@ const AdminUsers = () => {
         const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
         
-        // Filtrar por pestaña activa - CORREGIDO: separación correcta de usuarios
+        // Filtrar por pestaña activa
         let matchesTab = false;
         if (activeTab === 'administrative') {
-            // Administrativos: super_admin, admin, asesor (incluyendo sin rol que se asignan como asesor)
             matchesTab = USER_TYPES.administrative.includes(user.user_type);
         } else if (activeTab === 'system') {
-            // Sistema: marketplace, dropshipper, proveedor
             matchesTab = USER_TYPES.system.includes(user.user_type);
         } else {
             matchesTab = true; // Para pestaña de permisos, mostrar todos
@@ -480,19 +542,20 @@ const AdminUsers = () => {
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const handleDropOnRole = async (e, targetRole) => {
+    const handleDropOnRole = (e, targetRole) => {
         e.preventDefault();
         if (draggedPage && !rolePermissions[targetRole].includes(draggedPage.id)) {
             const newPermissions = [...(rolePermissions[targetRole] || []), draggedPage.id];
             
-            // Actualizar UI inmediatamente
             setRolePermissions(prev => ({
                 ...prev,
                 [targetRole]: newPermissions
             }));
             
-            // Guardar en base de datos
-            await saveRolePermissions(targetRole, newPermissions);
+            // Guardar en background sin bloquear UI
+            saveRolePermissions(targetRole, newPermissions).catch(err => {
+                console.error('Background save failed:', err);
+            });
         }
         setDraggedPage(null);
     };
@@ -508,39 +571,11 @@ const AdminUsers = () => {
         setDraggedPage(null);
     };
 
-    const removePageFromRole = async (pageId, role) => {
-        console.log(`🗑️ Removing page ${pageId} from role ${role}`);
-        const newPermissions = (rolePermissions[role] || []).filter(id => id !== pageId);
-        console.log(`📋 New permissions for ${role}:`, newPermissions);
-        
-        // Actualizar UI inmediatamente
-        setRolePermissions(prev => ({
-            ...prev,
-            [role]: newPermissions
-        }));
-        
-        // Guardar en base de datos
-        console.log(`💾 Saving permissions for ${role}...`);
-        const result = await saveRolePermissions(role, newPermissions);
-        console.log(`✅ Save result:`, result);
-    };
-
-    const removePageFromUser = (pageId, userId) => {
-        setUserPermissions(prev => ({
-            ...prev,
-            [userId]: (prev[userId] || []).filter(id => id !== pageId)
-        }));
-    };
-
-    // Funciones para manejar páginas restringidas
-    const handleDropOnRestricted = async (e) => {
+    // 🔧 FIXED: Función para páginas restringidas con drag & drop
+    const handleDropOnRestricted = (e) => {
         e.preventDefault();
         if (draggedPage && !restrictedPages.includes(draggedPage.id)) {
-            const newRestrictedPages = [...restrictedPages, draggedPage.id];
-            console.log('🔒 Adding page to restricted:', draggedPage.id, 'New list:', newRestrictedPages);
-            
-            // Actualizar UI inmediatamente
-            setRestrictedPages(newRestrictedPages);
+            handleDropOnRestrictedFixed(draggedPage.id);
             
             // Remover de todos los roles excepto super_admin
             const updatedRolePermissions = { ...rolePermissions };
@@ -550,25 +585,31 @@ const AdminUsers = () => {
                 }
             });
             setRolePermissions(updatedRolePermissions);
-            
-            // ✅ Guardar en base de datos INMEDIATAMENTE
-            console.log('💾 Saving restricted pages to database:', newRestrictedPages);
-            await saveRestrictedPages(newRestrictedPages);
         }
         setDraggedPage(null);
     };
 
-    const removePageFromRestricted = async (pageId) => {
-        console.log('🗑️ Removing page from restricted:', pageId);
-        const newRestrictedPages = restrictedPages.filter(id => id !== pageId);
-        console.log('📋 New restricted pages:', newRestrictedPages);
+    const removePageFromRole = (pageId, role) => {
+        console.log(`🗑️ Removing page ${pageId} from role ${role}`);
+        const newPermissions = (rolePermissions[role] || []).filter(id => id !== pageId);
         
-        // Actualizar UI inmediatamente
-        setRestrictedPages(newRestrictedPages);
+        setRolePermissions(prev => ({
+            ...prev,
+            [role]: newPermissions
+        }));
         
-        // ✅ Guardar en base de datos INMEDIATAMENTE
-        console.log('💾 Saving updated restricted pages to database:', newRestrictedPages);
-        await saveRestrictedPages(newRestrictedPages);
+        saveRolePermissions(role, newPermissions).then(result => {
+            console.log(`✅ Saved in background:`, result);
+        }).catch(err => {
+            console.error(`❌ Background save failed:`, err);
+        });
+    };
+
+    const removePageFromUser = (pageId, userId) => {
+        setUserPermissions(prev => ({
+            ...prev,
+            [userId]: (prev[userId] || []).filter(id => id !== pageId)
+        }));
     };
 
     // Verificar si una página está restringida
@@ -580,10 +621,16 @@ const AdminUsers = () => {
     const getAvailablePages = () => {
         const allPages = { ...AVAILABLE_PAGES };
         
-        // Si no es super_admin, filtrar páginas restringidas
-        if (!user?.roles?.includes('super_admin')) {
+        const isSuperAdmin = user?.roles?.includes('super_admin') || 
+                            user?.user_type === 'super_admin' ||
+                            user?.permissions?.some(p => p.includes('super_admin'));
+        
+        // Si NO es super_admin, filtrar páginas restringidas
+        if (!isSuperAdmin && restrictedPages.length > 0) {
             Object.keys(allPages).forEach(category => {
-                allPages[category] = allPages[category].filter(page => !isPageRestricted(page.id));
+                allPages[category] = allPages[category].filter(page => 
+                    !restrictedPages.includes(page.id)
+                );
             });
         }
         
@@ -594,8 +641,12 @@ const AdminUsers = () => {
     const getVisibleRoles = () => {
         const allRoles = Object.keys(rolePermissions || DEFAULT_ROLE_PERMISSIONS);
         
+        const isSuperAdmin = user?.roles?.includes('super_admin') || 
+                            user?.user_type === 'super_admin' ||
+                            user?.permissions?.some(p => p.includes('super_admin'));
+        
         // Si no es super_admin, ocultar el rol super_admin
-        if (!user?.roles?.includes('super_admin')) {
+        if (!isSuperAdmin) {
             return allRoles.filter(role => role !== 'super_admin');
         }
         
@@ -606,8 +657,8 @@ const AdminUsers = () => {
     const handleSaveChanges = async () => {
         if (!hasUnsavedChanges) return;
         
+        setSaveStatus('saving');
         setIsSaving(true);
-        console.log('💾 Saving all permission changes...');
         
         try {
             // Obtener todos los roles que han cambiado
@@ -623,40 +674,83 @@ const AdminUsers = () => {
                 }
             });
             
-            console.log(`🔄 Found ${changedRoles.length} roles with changes:`, changedRoles.map(r => r.role));
-            
-            // Guardar cada rol modificado
-            const savePromises = changedRoles.map(({ role, permissions }) => 
-                saveRolePermissions(role, permissions)
-            );
-            
             // Guardar páginas restringidas si han cambiado
             const restrictedChanged = JSON.stringify(restrictedPages) !== JSON.stringify(originalRestrictedPages);
+            
+            console.log(`💾 Saving changes: ${changedRoles.length} roles, restricted changed: ${restrictedChanged}`);
+            
+            // Ejecutar guardados en paralelo
+            const savePromises = [];
+            
+            // Guardar permisos de roles
+            changedRoles.forEach(({ role, permissions }) => {
+                savePromises.push(
+                    saveRolePermissions(role, permissions).then(result => {
+                        if (result === false) throw new Error(`Failed to save role ${role}`);
+                        return { type: 'role', role, success: true };
+                    })
+                );
+            });
+            
+            // 🔧 FIXED: Guardar páginas restringidas
             if (restrictedChanged) {
-                console.log('🔒 Saving restricted pages:', restrictedPages);
-                savePromises.push(saveRestrictedPages(restrictedPages));
+                savePromises.push(
+                    saveRestrictedPagesFixed(restrictedPages).then(result => {
+                        if (result === false) throw new Error('Failed to save restricted pages');
+                        return { type: 'restricted', success: true };
+                    })
+                );
             }
             
+            // Esperar a que todos se guarden
             const results = await Promise.all(savePromises);
-            const allSuccess = results.every(result => result !== false);
             
-            if (allSuccess) {
-                console.log('✅ All changes saved successfully');
-                // Actualizar las permissions originales para reflejar el nuevo estado guardado
-                setOriginalRolePermissions(JSON.parse(JSON.stringify(rolePermissions)));
-                setOriginalRestrictedPages(JSON.parse(JSON.stringify(restrictedPages)));
-                setHasUnsavedChanges(false);
-            } else {
-                console.error('❌ Some changes failed to save');
-                alert('Error: No se pudieron guardar todos los cambios. Revisa la consola para más detalles.');
-            }
+            // ✅ TODO GUARDADO EXITOSAMENTE
+            setHasUnsavedChanges(false);
+            setOriginalRolePermissions(JSON.parse(JSON.stringify(rolePermissions)));
+            setOriginalRestrictedPages(JSON.parse(JSON.stringify(restrictedPages)));
+            setSaveStatus('success');
+            
+            console.log('🎉 All changes saved successfully:', results);
+            
+            // Ocultar notificación de éxito después de 3 segundos
+            setTimeout(() => setSaveStatus(null), 3000);
+            
         } catch (error) {
             console.error('💥 Error saving changes:', error);
-            alert('Error: No se pudieron guardar los cambios. Revisa la conexión con la base de datos.');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus(null), 5000);
         } finally {
             setIsSaving(false);
         }
     };
+
+    // Detectar cambios para mostrar botón de guardar
+    useEffect(() => {
+        const hasPermissionChanges = () => {
+            const currentRoles = Object.keys(rolePermissions || {});
+            const originalRoles = Object.keys(originalRolePermissions || {});
+            
+            if (currentRoles.length !== originalRoles.length) return true;
+            
+            for (const role of currentRoles) {
+                const current = rolePermissions[role] || [];
+                const original = originalRolePermissions[role] || [];
+                
+                if (current.length !== original.length) return true;
+                if (current.some(page => !original.includes(page))) return true;
+            }
+            return false;
+        };
+        
+        const hasRestrictedChanges = () => {
+            if (restrictedPages.length !== originalRestrictedPages.length) return true;
+            return restrictedPages.some(page => !originalRestrictedPages.includes(page));
+        };
+        
+        const hasChanges = hasPermissionChanges() || hasRestrictedChanges();
+        setHasUnsavedChanges(hasChanges);
+    }, [rolePermissions, originalRolePermissions, restrictedPages, originalRestrictedPages]);
 
     // Reset filter when changing tabs
     const handleTabChange = (newTab) => {
@@ -664,10 +758,14 @@ const AdminUsers = () => {
         setRoleFilter('all');
     };
 
-    // Verificar permisos - usar sistema de permisos en lugar de roles hardcodeados
+    // Verificar permisos de acceso
+    const isSuperAdmin = user?.roles?.includes('super_admin') || 
+                        user?.user_type === 'super_admin' ||
+                        user?.permissions?.some(p => p.includes('super_admin'));
+                        
     const hasAdminUsersPermission = user?.permissions?.some(perm => 
         perm.startsWith('admin-users:') || perm.startsWith('sales:')
-    ) || user?.roles?.includes('super_admin');
+    ) || isSuperAdmin;
 
     if (!hasAdminUsersPermission) {
         return (
@@ -718,136 +816,136 @@ const AdminUsers = () => {
                 <>
                     {/* Filters */}
                     <div className="users-filters">
-                <div className="search-box">
-                    <input
-                        type="text"
-                        placeholder="🔍 Buscar usuarios..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                
-                <select 
-                    value={roleFilter} 
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="role-filter"
-                >
-                    <option value="all">Todos los roles</option>
-                    {activeTab === 'administrative' ? (
-                        <>
-                            <option value="super_admin">Super Admin</option>
-                            <option value="admin">Administrador</option>
-                            <option value="asesor">Asesor</option>
-                        </>
-                    ) : activeTab === 'system' ? (
-                        <>
-                            <option value="marketplace">Marketplace</option>
-                            <option value="dropshipper">Dropshipper</option>
-                            <option value="proveedor">Proveedor</option>
-                        </>
+                        <div className="search-box">
+                            <input
+                                type="text"
+                                placeholder="🔍 Buscar usuarios..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        
+                        <select 
+                            value={roleFilter} 
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            className="role-filter"
+                        >
+                            <option value="all">Todos los roles</option>
+                            {activeTab === 'administrative' ? (
+                                <>
+                                    <option value="super_admin">Super Admin</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="asesor">Asesor</option>
+                                </>
+                            ) : activeTab === 'system' ? (
+                                <>
+                                    <option value="marketplace">Marketplace</option>
+                                    <option value="dropshipper">Dropshipper</option>
+                                    <option value="proveedor">Proveedor</option>
+                                </>
+                            ) : (
+                                <>
+                                    <optgroup label="Administrativos">
+                                        <option value="super_admin">Super Admin</option>
+                                        <option value="admin">Administrador</option>
+                                        <option value="asesor">Asesor</option>
+                                    </optgroup>
+                                    <optgroup label="Sistema">
+                                        <option value="marketplace">Marketplace</option>
+                                        <option value="dropshipper">Dropshipper</option>
+                                        <option value="proveedor">Proveedor</option>
+                                    </optgroup>
+                                </>
+                            )}
+                        </select>
+
+                        <div className="users-stats">
+                            <span>Total: {filteredUsers.length}</span>
+                            <span>Activos: {filteredUsers.filter(u => u.is_active).length}</span>
+                            <span>Pendientes: {filteredUsers.filter(u => !u.is_verified).length}</span>
+                        </div>
+                    </div>
+
+                    {/* Users Table */}
+                    {loading ? (
+                        <div className="loading-state">
+                            <div className="spinner"></div>
+                            <p>Cargando usuarios...</p>
+                        </div>
                     ) : (
-                        <>
-                            <optgroup label="Administrativos">
-                                <option value="super_admin">Super Admin</option>
-                                <option value="admin">Administrador</option>
-                                <option value="asesor">Asesor</option>
-                            </optgroup>
-                            <optgroup label="Sistema">
-                                <option value="marketplace">Marketplace</option>
-                                <option value="dropshipper">Dropshipper</option>
-                                <option value="proveedor">Proveedor</option>
-                            </optgroup>
-                        </>
-                    )}
-                </select>
-
-                <div className="users-stats">
-                    <span>Total: {filteredUsers.length}</span>
-                    <span>Activos: {filteredUsers.filter(u => u.is_active).length}</span>
-                    <span>Pendientes: {filteredUsers.filter(u => !u.is_verified).length}</span>
-                </div>
-            </div>
-
-            {/* Users Table */}
-            {loading ? (
-                <div className="loading-state">
-                    <div className="spinner"></div>
-                    <p>Cargando usuarios...</p>
-                </div>
-            ) : (
-                <div className="users-table-container">
-                    <table className="users-table">
-                        <thead>
-                            <tr>
-                                <th>Usuario</th>
-                                <th>País</th>
-                                <th>Rol</th>
-                                <th>Fecha Registro</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredUsers.map(user => (
-                                <tr key={user.id} className={!user.is_active ? 'inactive' : ''}>
-                                    <td>
-                                        <div className="user-cell">
-                                            <div className="user-avatar">
-                                                {user.first_name?.[0] || 'U'}{user.last_name?.[0] || 'S'}
-                                            </div>
-                                            <div className="user-details">
-                                                <div className="user-name">
-                                                    {user.first_name || 'Sin nombre'} {user.last_name || ''}
+                        <div className="users-table-container">
+                            <table className="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>País</th>
+                                        <th>Rol</th>
+                                        <th>Fecha Registro</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredUsers.map(user => (
+                                        <tr key={user.id} className={!user.is_active ? 'inactive' : ''}>
+                                            <td>
+                                                <div className="user-cell">
+                                                    <div className="user-avatar">
+                                                        {user.first_name?.[0] || 'U'}{user.last_name?.[0] || 'S'}
+                                                    </div>
+                                                    <div className="user-details">
+                                                        <div className="user-name">
+                                                            {user.first_name || 'Sin nombre'} {user.last_name || ''}
+                                                        </div>
+                                                        <div className="user-email">{user.email}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="user-email">{user.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="business-cell">
-                                            🌍 {user.country || 'Colombia'}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`role-badge ${getRoleColor(user.user_type)}`}>
-                                            {getRoleLabel(user.user_type)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="date-cell">
-                                            {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="user-actions">
-                                            <button 
-                                                className="btn-action edit"
-                                                onClick={() => handleEditUser(user)}
-                                                title="Editar usuario"
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button 
-                                                className={`btn-action ${user.is_active ? 'deactivate' : 'activate'}`}
-                                                onClick={() => handleToggleUserStatus(user.id)}
-                                                title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}
-                                            >
-                                                {user.is_active ? '✅' : '⛔'}
-                                            </button>
-                                            <button 
-                                                className="btn-action delete"
-                                                onClick={() => handleDeleteUser(user)}
-                                                title="Eliminar usuario"
-                                            >
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                                            </td>
+                                            <td>
+                                                <div className="business-cell">
+                                                    🌍 {user.country || 'Colombia'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`role-badge ${getRoleColor(user.user_type)}`}>
+                                                    {getRoleLabel(user.user_type)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="date-cell">
+                                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="user-actions">
+                                                    <button 
+                                                        className="btn-action edit"
+                                                        onClick={() => handleEditUser(user)}
+                                                        title="Editar usuario"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button 
+                                                        className={`btn-action ${user.is_active ? 'deactivate' : 'activate'}`}
+                                                        onClick={() => handleToggleUserStatus(user.id)}
+                                                        title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}
+                                                    >
+                                                        {user.is_active ? '✅' : '⛔'}
+                                                    </button>
+                                                    <button 
+                                                        className="btn-action delete"
+                                                        onClick={() => handleDeleteUser(user)}
+                                                        title="Eliminar usuario"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
 
                     {/* Edit User Modal */}
                     {showEditModal && selectedUser && (
@@ -898,7 +996,7 @@ const AdminUsers = () => {
                             </div>
                         ))}
                         
-                        {/* Restricted Pages - Solo visible para super_admin */}
+                        {/* 🔧 FIXED: Páginas Restringidas - Solo visible para super_admin */}
                         {user?.roles?.includes('super_admin') && (
                             <div className="restricted-pages-section">
                                 <h4>🚫 Páginas Restringidas</h4>
@@ -923,7 +1021,7 @@ const AdminUsers = () => {
                                                     <span className="page-icon">{page.icon}</span>
                                                     <span className="page-name">{page.name}</span>
                                                     <button
-                                                        onClick={() => removePageFromRestricted(pageId)}
+                                                        onClick={() => removePageFromRestrictedFixed(pageId)}
                                                         className="remove-btn"
                                                         title="Quitar restricción"
                                                     >
@@ -948,8 +1046,21 @@ const AdminUsers = () => {
                                     onClick={handleSaveChanges}
                                     disabled={isSaving}
                                 >
-                                    {isSaving ? '💾 Guardando...' : '💾 Guardar Cambios'}
+                                    {saveStatus === 'saving' ? '⏳ Guardando...' : '💾 Guardar Cambios'}
                                 </button>
+                            )}
+                            
+                            {/* Notificaciones de estado */}
+                            {saveStatus === 'success' && (
+                                <div className="save-notification success">
+                                    <span>✅ Cambios guardados exitosamente</span>
+                                </div>
+                            )}
+                            
+                            {saveStatus === 'error' && (
+                                <div className="save-notification error">
+                                    <span>❌ Error al guardar. Intenta de nuevo.</span>
+                                </div>
                             )}
                         </div>
                         <div className="roles-grid">
@@ -962,44 +1073,44 @@ const AdminUsers = () => {
                                 getVisibleRoles().map(role => {
                                     const permissions = rolePermissions?.[role] || [];
                                     return (
-                                <div
-                                    key={role}
-                                    className="role-container"
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDropOnRole(e, role)}
-                                >
-                                    <div className="role-header">
-                                        <h4>{role === 'super_admin' ? '👑 Super Admin' : 
-                                            role === 'admin' ? '🛡️ Administrador' : 
-                                            role === 'asesor' ? '👨‍💼 Asesor' : 
-                                            role === 'marketplace' ? '🏪 Marketplace' :
-                                            role === 'dropshipper' ? '📦 Dropshipper' :
-                                            role === 'proveedor' ? '🚚 Proveedor' : role}</h4>
-                                        <span className="permission-count">{permissions && Array.isArray(permissions) ? permissions.length : 0} páginas</span>
-                                    </div>
-                                    <div className="assigned-pages">
-                                        {(permissions || []).map(pageId => {
-                                            const allPages = Object.values(AVAILABLE_PAGES).flat();
-                                            const page = allPages.find(p => p.id === pageId);
-                                            if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
-                                            
-                                            return (
-                                                <div key={pageId} className="assigned-page">
-                                                    <span>{page?.icon || '⚙️'}</span>
-                                                    <span>{page?.name || pageId}</span>
-                                                    <button
-                                                        onClick={() => removePageFromRole(pageId, role)}
-                                                        className="remove-btn"
-                                                        title="Quitar página"
-                                                    >
-                                                        ✖️
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                                )
+                                        <div
+                                            key={role}
+                                            className="role-container"
+                                            onDragOver={handleDragOver}
+                                            onDrop={(e) => handleDropOnRole(e, role)}
+                                        >
+                                            <div className="role-header">
+                                                <h4>{role === 'super_admin' ? '👑 Super Admin' : 
+                                                    role === 'admin' ? '🛡️ Administrador' : 
+                                                    role === 'asesor' ? '👨‍💼 Asesor' : 
+                                                    role === 'marketplace' ? '🏪 Marketplace' :
+                                                    role === 'dropshipper' ? '📦 Dropshipper' :
+                                                    role === 'proveedor' ? '🚚 Proveedor' : role}</h4>
+                                                <span className="permission-count">{permissions && Array.isArray(permissions) ? permissions.length : 0} páginas</span>
+                                            </div>
+                                            <div className="assigned-pages">
+                                                {(permissions || []).map(pageId => {
+                                                    const allPages = Object.values(AVAILABLE_PAGES).flat();
+                                                    const page = allPages.find(p => p.id === pageId);
+                                                    if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
+                                                    
+                                                    return (
+                                                        <div key={pageId} className="assigned-page">
+                                                            <span>{page?.icon || '⚙️'}</span>
+                                                            <span>{page?.name || pageId}</span>
+                                                            <button
+                                                                onClick={() => removePageFromRole(pageId, role)}
+                                                                className="remove-btn"
+                                                                title="Quitar página"
+                                                            >
+                                                                ✖️
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
                                 })
                             )}
                         </div>
@@ -1010,6 +1121,7 @@ const AdminUsers = () => {
     );
 };
 
+// Modal components
 const EditUserModal = ({ user, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         first_name: user.first_name,
@@ -1019,7 +1131,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
         is_active: user.is_active
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
