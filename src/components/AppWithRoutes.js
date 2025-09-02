@@ -64,7 +64,7 @@ const AppWithRoutes = () => {
           {/* Page Content - SCROLLABLE */}
           <main className="flex-1 overflow-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<SalesDashboardPage />} />
               <Route path="/dashboard" element={<SalesDashboardPage />} />
               <Route path="/orders2_0" element={<OrdersPage2_0 />} />
               <Route path="/quotes" element={<QuotesPageComponent />} />
@@ -90,7 +90,16 @@ const AppWithRoutes = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/system" element={<AdminSystem />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              {/* 404 - Mantener usuario en página actual, no redirigir */}
+              <Route path="*" element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
+                    <p className="text-gray-600 mb-4">Página no encontrada</p>
+                    <a href="/" className="text-blue-600 hover:underline">Volver al dashboard</a>
+                  </div>
+                </div>
+              } />
             </Routes>
           </main>
         </div>

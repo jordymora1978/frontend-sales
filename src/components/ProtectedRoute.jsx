@@ -17,9 +17,13 @@ const LoadingSpinner = () => (
 );
 
 const ProtectedRoute = ({ children, requiredPermission = 'read' }) => {
-  const { isAuthenticated, hasPermission } = useAuth(); // ⚡ EMPRESARIAL: Sin loading
+  const { isAuthenticated, hasPermission, loading } = useAuth();
 
-  // ⚡ EMPRESARIAL: Sin loading spinner - Navegación instantánea
+  // 🔄 Mostrar loading durante verificación inicial - PREVIENE PARPADEO
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" replace />;

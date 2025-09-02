@@ -23,22 +23,25 @@ export const useAuth = () => {
 const AuthProviderInner = ({ children }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false); // ⚡ EMPRESARIAL: Sin loading inicial
+  const [loading, setLoading] = useState(true); // 🔄 LOADING INICIAL para evitar parpadeo
   const [error, setError] = useState(null);
 
-  // ⚡ EMPRESARIAL: Carga instantánea de usuario desde cache
+  // 🔄 Carga inicial: Evita parpadeo al validar autenticación
   useEffect(() => {
     const cachedUser = localStorage.getItem('user_data');
     const token = localStorage.getItem('auth_token');
     
     if (cachedUser && token) {
       try {
-        setUser(JSON.parse(cachedUser)); // ⚡ Usuario disponible inmediatamente
+        setUser(JSON.parse(cachedUser)); // Usuario disponible desde cache
       } catch (e) {
         console.error('Failed to parse cached user');
         localStorage.removeItem('user_data');
       }
     }
+    
+    // Finalizar loading después de verificar cache
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
