@@ -82,6 +82,8 @@ const AdminUsers = () => {
     // 🔧 PAGES RESTRICTED FIX - SOLO ESTA PARTE ES NUEVA
     const [restrictedPages, setRestrictedPages] = useState([]);
     const [originalRestrictedPages, setOriginalRestrictedPages] = useState([]);
+    // 🚀 NUEVO: Estado para restricciones por usuario individual
+    const [userRestrictions, setUserRestrictions] = useState({}); // {userId: [restrictedPageIds]}
 
     // Función de mapeo para páginas restringidas
     const pageNameToId = (pageName) => {
@@ -352,6 +354,77 @@ const AdminUsers = () => {
             console.error(`💥 Network Error saving permissions for ${role}:`, error);
             return false;
         }
+    };
+
+    // 🚀 NUEVA: Guardar restricciones individuales de usuario
+    const saveUserRestrictions = async (userId, restrictedPages) => {
+        try {
+            console.log(`🚀 Saving ${restrictedPages.length} restricted pages for user ${userId}`);
+            console.log(`📤 Restricted pages:`, restrictedPages);
+            
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_USER_RESTRICTIONS}?user_id=${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(restrictedPages)
+            });
+            
+            console.log(`📡 API Response status:`, response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ User restrictions saved:`, data);
+                return data;
+            } else {
+                const errorData = await response.text();
+                console.error(`❌ API Error saving user restrictions:`, response.status, errorData);
+                return false;
+            }
+        } catch (error) {
+            console.error(`💥 Network Error saving user restrictions:`, error);
+            return false;
+        }
+    };
+
+    // 🚀 NUEVO: Manejar drop en restricciones de usuario individual
+    const handleDropOnUserRestrictions = (e, userId) => {
+        e.preventDefault();
+        if (draggedPage) {
+            // Agregar página a las restricciones del usuario
+            const currentRestrictions = userRestrictions[userId] || [];
+            if (!currentRestrictions.includes(draggedPage.id)) {
+                const newRestrictions = [...currentRestrictions, draggedPage.id];
+                
+                setUserRestrictions(prev => ({
+                    ...prev,
+                    [userId]: newRestrictions
+                }));
+
+                // Guardar inmediatamente en backend
+                saveUserRestrictions(userId, newRestrictions).catch(err => {
+                    console.error('Error saving user restrictions:', err);
+                });
+            }
+        }
+        setDraggedPage(null);
+    };
+
+    // 🚀 NUEVO: Remover página de restricciones de usuario
+    const removePageFromUserRestrictions = (pageId, userId) => {
+        const currentRestrictions = userRestrictions[userId] || [];
+        const newRestrictions = currentRestrictions.filter(id => id !== pageId);
+        
+        setUserRestrictions(prev => ({
+            ...prev,
+            [userId]: newRestrictions
+        }));
+
+        // Guardar inmediatamente en backend
+        saveUserRestrictions(userId, newRestrictions).catch(err => {
+            console.error('Error saving user restrictions:', err);
+        });
     };
 
     const handleEditUser = (userToEdit) => {
