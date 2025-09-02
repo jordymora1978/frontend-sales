@@ -348,8 +348,22 @@ const AdminUsers = () => {
         }
     };
 
-    const handleEditUser = (user) => {
-        setSelectedUser(user);
+    const handleEditUser = (userToEdit) => {
+        // 🛡️ PROTECCIÓN SUPER ADMIN: Solo Super Admin puede editar otros Super Admin
+        const currentUserIsSuperAdmin = user?.roles?.includes('super_admin') || 
+                                       user?.user_type === 'super_admin' ||
+                                       user?.permissions?.some(p => p.includes('super_admin'));
+        
+        const targetUserIsSuperAdmin = userToEdit?.user_type === 'super_admin' ||
+                                      userToEdit?.roles?.includes('super_admin');
+        
+        // Si el usuario a editar es Super Admin y el usuario actual NO es Super Admin
+        if (targetUserIsSuperAdmin && !currentUserIsSuperAdmin) {
+            alert('🚫 Acceso Denegado\n\nSolo un Super Admin puede editar a otro Super Admin.\n\nContacta al administrador del sistema si necesitas realizar cambios.');
+            return;
+        }
+        
+        setSelectedUser(userToEdit);
         setShowEditModal(true);
     };
 
@@ -885,55 +899,71 @@ const AdminUsers = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map(user => (
-                                        <tr key={user.id} className={!user.is_active ? 'inactive' : ''}>
+                                    {filteredUsers.map(tableUser => (
+                                        <tr key={tableUser.id} className={!tableUser.is_active ? 'inactive' : ''}>
                                             <td>
                                                 <div className="user-cell">
                                                     <div className="user-avatar">
-                                                        {user.first_name?.[0] || 'U'}{user.last_name?.[0] || 'S'}
+                                                        {tableUser.first_name?.[0] || 'U'}{tableUser.last_name?.[0] || 'S'}
                                                     </div>
                                                     <div className="user-details">
                                                         <div className="user-name">
-                                                            {user.first_name || 'Sin nombre'} {user.last_name || ''}
+                                                            {tableUser.first_name || 'Sin nombre'} {tableUser.last_name || ''}
                                                         </div>
-                                                        <div className="user-email">{user.email}</div>
+                                                        <div className="user-email">{tableUser.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="business-cell">
-                                                    🌍 {user.country || 'Colombia'}
+                                                    🌍 {tableUser.country || 'Colombia'}
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className={`role-badge ${getRoleColor(user.user_type)}`}>
-                                                    {getRoleLabel(user.user_type)}
+                                                <span className={`role-badge ${getRoleColor(tableUser.user_type)}`}>
+                                                    {getRoleLabel(tableUser.user_type)}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="date-cell">
-                                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                                    {tableUser.created_at ? new Date(tableUser.created_at).toLocaleDateString() : 'N/A'}
                                                 </div>
                                             </td>
                                             <td>
                                                 <div className="user-actions">
+                                                    {(() => {
+                                                        // 🛡️ PROTECCIÓN SUPER ADMIN: Verificar si se puede editar este usuario
+                                                        const currentUserIsSuperAdmin = user?.roles?.includes('super_admin') || 
+                                                                                       user?.user_type === 'super_admin' ||
+                                                                                       user?.permissions?.some(p => p.includes('super_admin'));
+                                                        
+                                                        const targetUserIsSuperAdmin = tableUser?.user_type === 'super_admin' ||
+                                                                                      tableUser?.roles?.includes('super_admin');
+                                                        
+                                                        const canEdit = !targetUserIsSuperAdmin || currentUserIsSuperAdmin;
+                                                        
+                                                        return (
+                                                            <button 
+                                                                className={`btn-action edit ${!canEdit ? 'disabled' : ''}`}
+                                                                onClick={() => canEdit ? handleEditUser(tableUser) : null}
+                                                                title={canEdit ? "Editar usuario" : "🚫 Solo Super Admin puede editar Super Admin"}
+                                                                disabled={!canEdit}
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                        );
+                                                    })()}
+                                                    
                                                     <button 
-                                                        className="btn-action edit"
-                                                        onClick={() => handleEditUser(user)}
-                                                        title="Editar usuario"
+                                                        className={`btn-action ${tableUser.is_active ? 'deactivate' : 'activate'}`}
+                                                        onClick={() => handleToggleUserStatus(tableUser.id)}
+                                                        title={tableUser.is_active ? 'Desactivar usuario' : 'Activar usuario'}
                                                     >
-                                                        ✏️
-                                                    </button>
-                                                    <button 
-                                                        className={`btn-action ${user.is_active ? 'deactivate' : 'activate'}`}
-                                                        onClick={() => handleToggleUserStatus(user.id)}
-                                                        title={user.is_active ? 'Desactivar usuario' : 'Activar usuario'}
-                                                    >
-                                                        {user.is_active ? '✅' : '⛔'}
+                                                        {tableUser.is_active ? '✅' : '⛔'}
                                                     </button>
                                                     <button 
                                                         className="btn-action delete"
-                                                        onClick={() => handleDeleteUser(user)}
+                                                        onClick={() => handleDeleteUser(tableUser)}
                                                         title="Eliminar usuario"
                                                     >
                                                         🗑️

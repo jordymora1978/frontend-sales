@@ -355,6 +355,19 @@
   color: #7c3aed;
 }
 
+.btn-action.edit.disabled {
+  color: #9ca3af;
+  background: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-action.edit.disabled:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  transform: none;
+}
+
 .btn-action.activate {
   color: #059669;
 }
