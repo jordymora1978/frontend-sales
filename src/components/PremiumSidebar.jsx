@@ -121,7 +121,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
 
   // 🚀 ELIMINADO: Todo el sistema complejo de API permissions
 
-  // 🚀 SISTEMA SIMPLE: Check if user has permission for a page
+  // 🚀 SISTEMA HÍBRIDO: Sin parpadeos + Con restricciones individuales
   const hasPagePermission = (pageId) => {
     if (!user) return false;
     
@@ -131,9 +131,19 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
       userType = user.roles[0]; // First role is primary
     }
     
-    // Get user pages from static definition
-    const userPages = PAGES_BY_USER_TYPE[userType] || PAGES_BY_USER_TYPE['asesor'];
-    return userPages.includes(pageId);
+    // 1. Check if page is allowed for user role (máximo permitido)
+    const rolePages = PAGES_BY_USER_TYPE[userType] || PAGES_BY_USER_TYPE['asesor'];
+    if (!rolePages.includes(pageId)) {
+      return false; // Página no permitida para este rol
+    }
+    
+    // 2. Check individual restrictions (desde user data, no API)
+    if (user?.restricted_pages && Array.isArray(user.restricted_pages)) {
+      return !user.restricted_pages.includes(pageId); // Si está restringida, no permitir
+    }
+    
+    // 3. Si no hay restricciones individuales, permitir todas las del rol
+    return true;
   };
 
   // Check if a section has any pages with permissions
