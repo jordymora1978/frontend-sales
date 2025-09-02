@@ -147,6 +147,13 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
       return true;
     }
     
+    // 🚀 FIX PARPADEO: Durante loading, mostrar páginas básicas para evitar sidebar vacío
+    if (permissionsLoading) {
+      // Páginas básicas que todos los usuarios autenticados pueden ver
+      const basicPages = ['dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes'];
+      return basicPages.includes(pageId);
+    }
+    
     // Check if user has specific page permission
     return userPagePermissions.includes(pageId);
   };
