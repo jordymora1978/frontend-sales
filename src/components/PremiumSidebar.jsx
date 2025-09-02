@@ -125,8 +125,14 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
   const hasPagePermission = (pageId) => {
     if (!user) return false;
     
+    // Get user type from roles array or user_type field
+    let userType = user?.user_type;
+    if (user?.roles && user.roles.length > 0) {
+      userType = user.roles[0]; // First role is primary
+    }
+    
     // Get user pages from static definition
-    const userPages = PAGES_BY_USER_TYPE[user?.user_type] || PAGES_BY_USER_TYPE['asesor'];
+    const userPages = PAGES_BY_USER_TYPE[userType] || PAGES_BY_USER_TYPE['asesor'];
     return userPages.includes(pageId);
   };
 
