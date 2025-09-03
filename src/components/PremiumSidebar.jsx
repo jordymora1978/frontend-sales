@@ -190,13 +190,9 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     return roleNames[role] || 'Usuario';
   };
 
-  const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
-    { id: 'orders2_0', name: 'Mis Ventas', icon: ShoppingBag, badge: null, path: '/orders2_0' },
-    { id: 'customers', name: 'Mis Clientes', icon: Users, badge: null, path: '/customers' },
-    { id: 'control-reportes', name: 'Mis Reportes', icon: TrendingUp, badge: null, path: '/control-reportes' },
-    { id: 'quotes', name: 'Cotizaciones', icon: FileText, badge: '3', path: '/quotes' }
-  ];
+  // 🚀 REMOVED: Hardcoded menu items that caused incorrect first menu
+  // Now only shows menu based on actual user permissions
+  const menuItems = [];
 
   // System section pages (always visible but filtered by permissions)
   const systemPages = [
