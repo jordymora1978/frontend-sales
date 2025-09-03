@@ -190,9 +190,21 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     return roleNames[role] || 'Usuario';
   };
 
-  // 🚀 REMOVED: Hardcoded menu items that caused incorrect first menu
-  // Now only shows menu based on actual user permissions
-  const menuItems = [];
+  // 🚀 DYNAMIC: Generate menu items based on actual user permissions
+  const menuItems = useMemo(() => {
+    if (!user || !user.role_permissions) return [];
+    
+    const permissionToMenuItem = {
+      'dashboard': { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
+      'sales': { id: 'sales', name: 'Ventas', icon: ShoppingBag, badge: null, path: '/sales' },
+      'admin-users': { id: 'admin-users', name: 'Gestión de Usuarios', icon: Users, badge: null, path: '/admin/users' },
+      'catalogo-amazon': { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: Package, badge: null, path: '/catalogo-amazon' }
+    };
+    
+    return user.role_permissions
+      .map(permission => permissionToMenuItem[permission])
+      .filter(item => item); // Remove undefined items
+  }, [user]);
 
   // System section pages (always visible but filtered by permissions)
   const systemPages = [
