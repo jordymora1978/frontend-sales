@@ -334,13 +334,12 @@ class AuthService {
     }
     localStorage.setItem(USER_KEY, JSON.stringify(this.user));
     
-    // 🚀 AUTO-LOAD: TEMPORARILY DISABLED - Causing 20 second delay
-    // TODO: Fix conflict between api.js and authService.js
-    // if (this.user && this.user.roles && this.user.roles.length > 0) {
-    //   this.loadUserRolePermissions().catch(error => {
-    //     console.warn('Failed to auto-load role permissions:', error);
-    //   });
-    // }
+    // 🚀 AUTO-LOAD: Re-enabled with fixed function
+    if (this.user && this.user.roles && this.user.roles.length > 0) {
+      this.loadUserRolePermissions().catch(error => {
+        console.warn('Failed to auto-load role permissions:', error);
+      });
+    }
   }
 
   /**

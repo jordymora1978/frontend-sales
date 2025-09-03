@@ -37,23 +37,22 @@ const AuthProviderInner = ({ children }) => {
           const parsedUser = JSON.parse(cachedUser);
           setUser(parsedUser); // Usuario disponible desde cache inmediatamente
           
-          // 🚀 TEMPORARILY DISABLED: Permission loading causing 20s delay
-          // TODO: Fix conflict between api.js and authService.js
-          // if (!parsedUser.role_permissions && parsedUser.roles && parsedUser.roles.length > 0) {
-          //   console.log('🔄 Loading role permissions for user...');
-          //   try {
-          //     // Cargar permisos del rol desde BD
-          //     await authService.loadUserRolePermissions();
-          //     const updatedUserData = localStorage.getItem('user_data');
-          //     if (updatedUserData) {
-          //       const updatedUser = JSON.parse(updatedUserData);
-          //       setUser(updatedUser); // Actualizar con permisos cargados
-          //       console.log('✅ Role permissions loaded:', updatedUser.role_permissions);
-          //     }
-          //   } catch (e) {
-          //     console.warn('Could not load role permissions on initialization');
-          //   }
-          // }
+          // 🚀 RE-ENABLED: Load role permissions to prevent flicker
+          if (!parsedUser.role_permissions && parsedUser.roles && parsedUser.roles.length > 0) {
+            console.log('🔄 Loading role permissions for user...');
+            try {
+              // Cargar permisos del rol desde BD
+              await authService.loadUserRolePermissions();
+              const updatedUserData = localStorage.getItem('user_data');
+              if (updatedUserData) {
+                const updatedUser = JSON.parse(updatedUserData);
+                setUser(updatedUser); // Actualizar con permisos cargados
+                console.log('✅ Role permissions loaded:', updatedUser.role_permissions);
+              }
+            } catch (e) {
+              console.warn('Could not load role permissions on initialization');
+            }
+          }
         } catch (e) {
           console.error('Failed to parse cached user');
           localStorage.removeItem('user_data');
