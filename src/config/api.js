@@ -2,8 +2,6 @@
 // Centralized configuration to avoid environment variable conflicts
 // Updated: Sep 2, 2025 - Fixed production AUTH_API_URL
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 // Production URLs (default)
 const PRODUCTION_CONFIG = {
   AUTH_API_URL: 'https://auth-api.dropux.co',
@@ -33,9 +31,9 @@ const getAPIConfig = () => {
     return PRODUCTION_CONFIG;
   }
 
-  // ONLY use development URLs for localhost
+  // Development mode: Use localhost when running on localhost
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    console.log('🔧 DEVELOPMENT MODE: Using local API URLs');
+    console.log('🛠️ DEV MODE: Using local development API URLs');
     return DEVELOPMENT_CONFIG;
   }
 

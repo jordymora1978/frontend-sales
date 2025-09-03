@@ -44,7 +44,7 @@ const USER_TYPES = {
     system: ['marketplace', 'dropshipper', 'proveedor']
 };
 
-// Permisos por defecto para cada rol
+// Menú por defecto para cada tipo de usuario
 const DEFAULT_ROLE_PERMISSIONS = {
     // Usuarios Administrativos
     'super_admin': [...Object.values(AVAILABLE_PAGES).flat().map(p => p.id)], // Super Admin tiene acceso a TODO
@@ -58,7 +58,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
 };
 
 const AdminUsers = () => {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false); // 🚀 PROFESIONAL: Sin loading inicial innecesario
     const [selectedUser, setSelectedUser] = useState(null);
@@ -76,7 +76,7 @@ const AdminUsers = () => {
     const [toggleLoading, setToggleLoading] = useState(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [permissionsLoading, setPermissionsLoading] = useState(true);
+    const [permissionsLoading, setPermissionsLoading] = useState(false); // 🚀 EMPRESARIAL: Sin "Cargando..." inicial
     const [saveStatus, setSaveStatus] = useState(null); // 'saving' | 'success' | 'error' | null
 
     // 🔧 PAGES RESTRICTED FIX - SOLO ESTA PARTE ES NUEVA
@@ -187,10 +187,15 @@ const AdminUsers = () => {
     // FIN DEL FIX DE PÁGINAS RESTRINGIDAS
 
     useEffect(() => {
-        // Verificar permisos usando el mismo criterio que la validación principal
-        const hasAdminUsersPermission = user?.permissions?.some(perm => 
-            perm.startsWith('admin-users:') || perm.startsWith('sales:')
-        ) || user?.roles?.includes('super_admin');
+        // 🚀 EMPRESARIAL: Verificar permisos usando el mismo criterio actualizado
+        const hasAdminUsersPermission = (
+            user?.roles?.includes('super_admin') ||
+            user?.role_permissions?.includes('admin-users') ||
+            user?.roles?.includes('admin') ||
+            user?.permissions?.some(perm => 
+                perm.startsWith('admin-users:') || perm.startsWith('sales:')
+            )
+        );
 
         if (!hasAdminUsersPermission) {
             return;
@@ -334,6 +339,7 @@ const AdminUsers = () => {
             const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_ROLE_PERMISSIONS}?role_name=${role}`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(permissions)
@@ -344,6 +350,11 @@ const AdminUsers = () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log(`✅ API Success for ${role}:`, data);
+                
+                // 🚀 SIMPLE Y EFECTIVO: Actualizar inmediatamente a usuarios del rol
+                console.log(`🎯 ABOUT TO CALL updateAllUsersOfRole(${role}, ${JSON.stringify(permissions)})`);
+                updateAllUsersOfRole(role, permissions);
+                
                 return data;
             } else {
                 const errorData = await response.text();
@@ -353,6 +364,102 @@ const AdminUsers = () => {
         } catch (error) {
             console.error(`💥 Network Error saving permissions for ${role}:`, error);
             return false;
+        }
+    };
+
+    // 🔧 FIXED: Actualizar usuarios inmediatamente con permisos reales de BD
+    const updateAllUsersOfRole = (role, allowedPages) => {
+        console.log(`⚡ [INSTANT UPDATE] Updating all ${role} users with new permissions`);
+        
+        // 1. SIEMPRE actualizar la información del rol modificado (independiente de quién haga el cambio)
+        const userData = localStorage.getItem('user_data');
+        if (userData) {
+            const user = JSON.parse(userData);
+            
+            // 🚀 EMPRESARIAL: Si el usuario actual ES del rol que se modificó, actualizar inmediatamente
+            if (user.roles && user.roles.includes(role)) {
+                console.log(`⚡ [INSTANT UPDATE] Current user is ${role}, updating localStorage...`);
+                
+                // 🔧 FIXED: Actualizar role_permissions (permisos reales) en lugar de restricted_pages
+                user.role_permissions = allowedPages;
+                localStorage.setItem('user_data', JSON.stringify(user));
+                
+                // Disparar evento para que otros componentes se enteren
+                window.dispatchEvent(new CustomEvent('userPermissionsUpdated', {
+                    detail: { role, allowedPages, updatedPermissions: allowedPages }
+                }));
+                
+                console.log(`✅ [INSTANT UPDATE] User role_permissions updated immediately:`, allowedPages);
+            }
+            
+            // 🚀 CRITICAL FIX: Si super_admin modifica otro rol, notificar a usuarios de ESE rol
+            else {
+                console.log(`⚡ [CROSS-ROLE UPDATE] ${user.roles?.[0] || 'unknown'} is updating ${role} permissions`);
+            }
+        }
+        
+        // 2. 🚀 CRITICAL FIX: SIEMPRE notificar a otras ventanas (cross-window communication)
+        // Esto permite que cuando super_admin modifica admin, los usuarios admin se enteren
+        console.log(`⚡ [CROSS-WINDOW] Broadcasting ${role} permission changes to all windows`);
+        localStorage.setItem('permission_update_trigger', JSON.stringify({
+            timestamp: Date.now(),
+            role: role,
+            allowedPages: allowedPages
+        }));
+    };
+
+    // 🔄 SYNC: Actualizar restricted_pages de todos los usuarios del rol en tiempo real
+    const syncUserRestrictionsForRole = async (role, allowedPages) => {
+        try {
+            console.log(`🔄 Syncing restricted_pages for role: ${role}`);
+            
+            const response = await fetch(`${AUTH_API_URL}/auth/admin/sync-role-restrictions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    role: role,
+                    allowed_pages: allowedPages
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`✅ Synced restrictions for ${result.users_updated} users`);
+                
+                // 🔄 TIEMPO REAL: Si el usuario actual fue afectado, actualizar su contexto inmediatamente
+                const currentUser = JSON.parse(localStorage.getItem('user_data') || '{}');
+                if (currentUser.roles && currentUser.roles.includes(role)) {
+                    console.log('🔄 Current user affected, refreshing context...');
+                    
+                    // ⚡ EMPRESARIAL: Actualizar contexto sin recargar página
+                    try {
+                        console.log('🔄 Refreshing user context after sync...');
+                        await refreshUser();
+                        console.log('✅ User context updated in real-time');
+                        
+                        // 🚀 GARANTIZADO: También actualizar localStorage directamente como fallback
+                        const updatedUser = await fetch(`${AUTH_API_URL}/auth/me`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                            }
+                        }).then(res => res.json());
+                        
+                        if (updatedUser) {
+                            localStorage.setItem('user_data', JSON.stringify(updatedUser));
+                            console.log('✅ LocalStorage user data also updated');
+                        }
+                    } catch (e) {
+                        console.warn('Could not refresh user context:', e);
+                    }
+                }
+            } else {
+                console.warn('Could not sync user restrictions, will work on next login');
+            }
+        } catch (error) {
+            console.warn('Sync failed, restrictions will apply on next login:', error);
         }
     };
 
@@ -635,20 +742,42 @@ const AdminUsers = () => {
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const handleDropOnRole = (e, targetRole) => {
+    const handleDropOnRole = async (e, targetRole) => {
         e.preventDefault();
         if (draggedPage && !rolePermissions[targetRole].includes(draggedPage.id)) {
-            const newPermissions = [...(rolePermissions[targetRole] || []), draggedPage.id];
+            const originalPermissions = rolePermissions[targetRole] || [];
+            const newPermissions = [...originalPermissions, draggedPage.id];
             
+            // 🔄 OPTIMISTIC UPDATE: Actualizar UI inmediatamente
             setRolePermissions(prev => ({
                 ...prev,
                 [targetRole]: newPermissions
             }));
             
-            // Guardar en background sin bloquear UI
-            saveRolePermissions(targetRole, newPermissions).catch(err => {
-                console.error('Background save failed:', err);
-            });
+            try {
+                console.log(`🚀 Saving permissions for ${targetRole}:`, newPermissions);
+                const result = await saveRolePermissions(targetRole, newPermissions);
+                
+                if (!result) {
+                    // 🔄 ROLLBACK: Revertir cambios si falla el guardado
+                    console.error('❌ Save failed, rolling back changes');
+                    setRolePermissions(prev => ({
+                        ...prev,
+                        [targetRole]: originalPermissions
+                    }));
+                    alert('Error: No se pudieron guardar los permisos. Cambios revertidos.');
+                } else {
+                    console.log('✅ Permissions saved successfully');
+                }
+            } catch (error) {
+                // 🔄 ROLLBACK: Revertir cambios en caso de error
+                console.error('💥 Save error, rolling back changes:', error);
+                setRolePermissions(prev => ({
+                    ...prev,
+                    [targetRole]: originalPermissions
+                }));
+                alert('Error de conexión: No se pudieron guardar los permisos. Cambios revertidos.');
+            }
         }
         setDraggedPage(null);
     };
@@ -856,9 +985,19 @@ const AdminUsers = () => {
                         user?.user_type === 'super_admin' ||
                         user?.permissions?.some(p => p.includes('super_admin'));
                         
-    const hasAdminUsersPermission = user?.permissions?.some(perm => 
-        perm.startsWith('admin-users:') || perm.startsWith('sales:')
-    ) || isSuperAdmin;
+    // 🚀 EMPRESARIAL: Verificación de permisos actualizada para usar role_permissions
+    const hasAdminUsersPermission = (
+        // Super admin siempre tiene acceso
+        isSuperAdmin ||
+        // Verificar role_permissions (nuevo sistema)
+        user?.role_permissions?.includes('admin-users') ||
+        // Verificar si el rol permite gestión de usuarios
+        (user?.roles?.includes('admin')) ||
+        // Fallback: permisos legacy
+        user?.permissions?.some(perm => 
+            perm.startsWith('admin-users:') || perm.startsWith('sales:')
+        )
+    );
 
     if (!hasAdminUsersPermission) {
         return (
@@ -900,7 +1039,7 @@ const AdminUsers = () => {
                     className={`tab-button ${activeTab === 'permissions' ? 'active' : ''}`}
                     onClick={() => setActiveTab('permissions')}
                 >
-                    🔒 Permisos por Rol
+                    🎛️ Menú Personalizado
                 </button>
             </div>
 
@@ -959,13 +1098,7 @@ const AdminUsers = () => {
                         </div>
                     </div>
 
-                    {/* Users Table */}
-                    {loading ? (
-                        <div className="loading-state">
-                            <div className="spinner"></div>
-                            <p>Cargando usuarios...</p>
-                        </div>
-                    ) : (
+                    {/* Users Table - 🚀 EMPRESARIAL: Sin loading innecesario */}
                         <div className="users-table-container">
                             <table className="users-table">
                                 <thead>
@@ -1054,7 +1187,6 @@ const AdminUsers = () => {
                                 </tbody>
                             </table>
                         </div>
-                    )}
 
                     {/* Edit User Modal */}
                     {showEditModal && selectedUser && (
@@ -1080,8 +1212,8 @@ const AdminUsers = () => {
                 <div className="permissions-panel">
                     {/* Available Pages */}
                     <div className="permissions-section">
-                        <h3>📄 Páginas Disponibles</h3>
-                        <p>Arrastra las páginas hacia los roles para asignar permisos</p>
+                        <h3>📄 Módulos Disponibles</h3>
+                        <p>Arrastra los módulos hacia los perfiles para personalizar sus menús</p>
                         
                         {Object.entries(availablePages).map(([category, pages]) => (
                             <div key={category} className="page-category">
@@ -1089,35 +1221,35 @@ const AdminUsers = () => {
                                     category === 'config' ? '⚙️ Configuración' : 
                                     category === 'control' ? '📊 Control Suite' : 
                                     category === 'products' ? '📦 Products Suite' : '👑 Super Admin'}</h4>
-                                <div className="page-grid">
+                                <div className="modules-grid">
                                     {pages.map(page => (
                                         <div
                                             key={page.id}
-                                            className="page-card"
+                                            className="module-card"
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, page)}
                                         >
-                                            <span className="page-icon">{page.icon}</span>
-                                            <span className="page-name">{page.name}</span>
+                                            <span className="module-icon">{page.icon}</span>
+                                            <span className="module-name">{page.name}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         ))}
                         
-                        {/* 🔧 FIXED: Páginas Restringidas - Solo visible para super_admin */}
+                        {/* 🔧 FIXED: Módulos Restringidos - Solo visible para super_admin */}
                         {user?.roles?.includes('super_admin') && (
-                            <div className="restricted-pages-section">
-                                <h4>🚫 Páginas Restringidas</h4>
-                                <p>Solo Super Admin puede asignar estas páginas</p>
+                            <div className="restricted-modules-section">
+                                <h4>🚫 Módulos Restringidos</h4>
+                                <p>Solo Super Admin puede asignar estos módulos</p>
                                 <div 
-                                    className="restricted-pages-container"
+                                    className="restricted-modules-container"
                                     onDragOver={handleDragOver}
                                     onDrop={handleDropOnRestricted}
                                 >
                                     {restrictedPages.length === 0 ? (
                                         <div className="empty-restricted">
-                                            <span>📋 Arrastra páginas aquí para restringirlas</span>
+                                            <span>📋 Arrastra módulos aquí para restringirlos</span>
                                         </div>
                                     ) : (
                                         restrictedPages.map(pageId => {
@@ -1126,9 +1258,9 @@ const AdminUsers = () => {
                                             if (!page) return null;
                                             
                                             return (
-                                                <div key={pageId} className="restricted-page">
-                                                    <span className="page-icon">{page.icon}</span>
-                                                    <span className="page-name">{page.name}</span>
+                                                <div key={pageId} className="restricted-module">
+                                                    <span className="module-icon">{page.icon}</span>
+                                                    <span className="module-name">{page.name}</span>
                                                     <button
                                                         onClick={() => removePageFromRestrictedFixed(pageId)}
                                                         className="remove-btn"
@@ -1145,10 +1277,10 @@ const AdminUsers = () => {
                         )}
                     </div>
 
-                    {/* Role Permissions */}
+                    {/* Custom Menu by Profile */}
                     <div className="permissions-section">
                         <div className="permissions-header">
-                            <h3>🔒 Permisos por Rol</h3>
+                            <h3>🔒 Menú Personalizado por Perfil</h3>
                             {hasUnsavedChanges && (
                                 <button 
                                     className="save-changes-btn"
@@ -1172,56 +1304,72 @@ const AdminUsers = () => {
                                 </div>
                             )}
                         </div>
-                        <div className="roles-grid">
-                            {permissionsLoading ? (
-                                <div className="permissions-loading">
-                                    <div className="spinner"></div>
-                                    <p>Cargando permisos...</p>
-                                </div>
-                            ) : (
-                                getVisibleRoles().map(role => {
-                                    const permissions = rolePermissions?.[role] || [];
-                                    return (
+                        <div className="profiles-grid">
+                            {/* 🔒 PERFILES: Menús personalizados por perfil */}
+                            {getVisibleRoles().map(role => {
+                                const permissions = rolePermissions?.[role] || [];
+                                const roleInfo = {
+                                    'super_admin': { title: '👑 Super Admin', description: 'Acceso completo al sistema' },
+                                    'admin': { title: '🛡️ Administrador', description: 'Gestión general del ecosistema' },
+                                    'asesor': { title: '👨‍💼 Asesor', description: 'Atención y soporte a clientes' },
+                                    'marketplace': { title: '🏪 Marketplace', description: 'Gestión de tiendas online' },
+                                    'dropshipper': { title: '📦 Dropshipper', description: 'Productos y proveedores' },
+                                    'proveedor': { title: '🚚 Proveedor', description: 'Gestión de inventario' }
+                                };
+                                
+                                return (
                                         <div
                                             key={role}
-                                            className="role-container"
+                                            className="profile-container"
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDropOnRole(e, role)}
                                         >
-                                            <div className="role-header">
-                                                <h4>{role === 'super_admin' ? '👑 Super Admin' : 
-                                                    role === 'admin' ? '🛡️ Administrador' : 
-                                                    role === 'asesor' ? '👨‍💼 Asesor' : 
-                                                    role === 'marketplace' ? '🏪 Marketplace' :
-                                                    role === 'dropshipper' ? '📦 Dropshipper' :
-                                                    role === 'proveedor' ? '🚚 Proveedor' : role}</h4>
-                                                <span className="permission-count">{permissions && Array.isArray(permissions) ? permissions.length : 0} páginas</span>
+                                            <div className="profile-header">
+                                                <div className="profile-title">
+                                                    <h4>{roleInfo[role]?.title || role}</h4>
+                                                    <p className="profile-description">{roleInfo[role]?.description}</p>
+                                                </div>
+                                                <div className="profile-stats">
+                                                    <span className="menu-count">{permissions && Array.isArray(permissions) ? permissions.length : 0}</span>
+                                                    <span className="menu-label">módulos</span>
+                                                </div>
                                             </div>
-                                            <div className="assigned-pages">
-                                                {(permissions || []).map(pageId => {
-                                                    const allPages = Object.values(AVAILABLE_PAGES).flat();
-                                                    const page = allPages.find(p => p.id === pageId);
-                                                    if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
+                                            <div className="profile-menu">
+                                                <div className="menu-header">
+                                                    <span className="menu-title">🍕 Menú Personalizado</span>
+                                                </div>
+                                                <div className="menu-items">
+                                                    {(permissions || []).map(pageId => {
+                                                        const allPages = Object.values(AVAILABLE_PAGES).flat();
+                                                        const page = allPages.find(p => p.id === pageId);
+                                                        if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
+                                                        
+                                                        return (
+                                                            <div key={pageId} className="menu-item">
+                                                                <span className="item-icon">{page?.icon || '⚙️'}</span>
+                                                                <span className="item-name">{page?.name || pageId}</span>
+                                                                <button
+                                                                    onClick={() => removePageFromRole(pageId, role)}
+                                                                    className="remove-item-btn"
+                                                                    title="Quitar del menú"
+                                                                >
+                                                                    ✖️
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
                                                     
-                                                    return (
-                                                        <div key={pageId} className="assigned-page">
-                                                            <span>{page?.icon || '⚙️'}</span>
-                                                            <span>{page?.name || pageId}</span>
-                                                            <button
-                                                                onClick={() => removePageFromRole(pageId, role)}
-                                                                className="remove-btn"
-                                                                title="Quitar página"
-                                                            >
-                                                                ✖️
-                                                            </button>
+                                                    {permissions.length === 0 && (
+                                                        <div className="empty-menu">
+                                                            <span>📋 Arrastra módulos aquí para personalizar el menú</span>
                                                         </div>
-                                                    );
-                                                })}
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
                                 })
-                            )}
+                            }
                         </div>
                     </div>
                 </div>

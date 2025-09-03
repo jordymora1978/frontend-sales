@@ -27,14 +27,19 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import ssoManager from '../utils/ssoManager';
+import { useAuth } from '../context/AuthContext';
+import { AUTH_API_URL } from '../config/api.js';
 import './UnifiedSidebar3.css';
 
 const UnifiedSidebar3 = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
+  const { user } = useAuth(); // 🔒 Obtener usuario con permisos personalizados
   const [expandedSections, setExpandedSections] = useState(new Set(['navigation', 'control']));
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [userRolePermissions, setUserRolePermissions] = useState(null);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   // Manejo responsive
   useEffect(() => {
@@ -109,35 +114,228 @@ const UnifiedSidebar3 = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed 
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const navigationStructure = {
-    navigation: {
-      title: "NAVEGACIÓN",
-      items: [
-        // Rutas sin hijos (navegación directa)
-        { id: "dashboard", name: "Dashboard", icon: BarChart3, type: "native" },
-        { id: "orders2", name: "Órdenes Pro", icon: ShoppingCart, type: "native" },
-        { id: "quotes", name: "Cotizaciones", icon: FileText, type: "native" },
-        { id: "customers", name: "Clientes", icon: Users, type: "native" },
-        { id: "ml-stores", name: "Tiendas MercadoLibre", icon: Package, type: "native" },
+  // 🚀 NUEVA FUNCIÓN: Cargar permisos específicos del usuario desde BD
+  const loadUserRolePermissionsFromAPI = async () => {
+    if (!user || !user.roles || user.roles.length === 0) {
+      console.log('🔍 [SIDEBAR] No user or roles, skipping permission load');
+      return;
+    }
+
+    try {
+      console.log('🚀 [SIDEBAR] Cargando permisos desde API para usuario:', user.email);
+      const userRole = user.roles[0]; // Rol principal
+      
+      const response = await fetch(`${AUTH_API_URL}/admin/role-permissions`);
+      
+      if (response.ok) {
+        const allRolePermissions = await response.json();
+        console.log('📥 [SIDEBAR] Todos los permisos de roles:', allRolePermissions);
         
-        // Una sola sección con hijos
-        { 
-          id: "control", 
-          name: "Control", 
-          icon: Archive, 
-          type: "submenu",
+        // Obtener permisos específicos del rol del usuario
+        const userPermissions = allRolePermissions[userRole] || [];
+        console.log(`✅ [SIDEBAR] Permisos para rol ${userRole}:`, userPermissions);
+        
+        // Limpiar cache y forzar actualización
+        localStorage.removeItem('menu_cache');
+        setUserRolePermissions(userPermissions);
+        setPermissionsLoaded(true);
+        
+        // Forzar re-render inmediato
+        const newNavigation = generateNavigation(userPermissions);
+        setNavigationStructure(newNavigation);
+        
+        return userPermissions;
+      } else {
+        console.error('❌ [SIDEBAR] Error loading role permissions:', response.status);
+      }
+    } catch (error) {
+      console.error('💥 [SIDEBAR] Error loading user role permissions:', error);
+    }
+    
+    return [];
+  };
+
+  // 🔧 FUNCIÓN AUXILIAR: Generar navegación desde permisos
+  const generateNavigation = (permissions) => {
+    const allowedModules = [];
+    
+    permissions.forEach(moduleId => {
+      const moduleConfig = AVAILABLE_MODULES[moduleId];
+      if (moduleConfig) {
+        allowedModules.push({
+          id: moduleId,
+          name: moduleConfig.name,
+          icon: moduleConfig.icon,
+          type: moduleConfig.type
+        });
+      }
+    });
+    
+    return {
+      navigation: {
+        title: "MENÚ PERSONALIZADO",
+        items: allowedModules
+      }
+    };
+  };
+
+  // 🧪 FUNCIÓN DE TEST: Simular usuario Administrador
+  const testAdminUser = () => {
+    console.log('🧪 [TEST] Simulando usuario Administrador...');
+    
+    // Permisos reales del administrador desde BD
+    const adminPermissions = ['dashboard', 'admin-users', 'quotes', 'customers'];
+    const allowedModules = [];
+    
+    adminPermissions.forEach(moduleId => {
+      const moduleConfig = AVAILABLE_MODULES[moduleId];
+      if (moduleConfig) {
+        allowedModules.push({
+          id: moduleId,
+          name: moduleConfig.name,
+          icon: moduleConfig.icon,
+          type: moduleConfig.type
+        });
+        console.log(`✅ [TEST] Módulo válido: ${moduleConfig.name} (${moduleId})`);
+      } else {
+        console.log(`❌ [TEST] Módulo NO ENCONTRADO: ${moduleId}`);
+      }
+    });
+    
+    console.log('📋 [TEST RESULT] Administrador verá:', allowedModules.map(m => `${m.name}`));
+    return allowedModules;
+  };
+
+  // 🔒 MENÚ PERSONALIZADO: Mapeo de IDs a configuración de módulos
+  const AVAILABLE_MODULES = {
+    // 🏠 Principales
+    'dashboard': { name: 'Dashboard', icon: BarChart3, type: 'native' },
+    'orders2_0': { name: 'Mis Ventas', icon: ShoppingCart, type: 'native' },
+    'customers': { name: 'Mis Clientes', icon: Users, type: 'native' },
+    'control-reportes': { name: 'Mis Reportes', icon: TrendingUp, type: 'native' },
+    'quotes': { name: 'Cotizaciones', icon: FileText, type: 'native' },
+    
+    // ⚙️ Configuración
+    'ml-stores': { name: 'Mis Tiendas', icon: Package, type: 'native' },
+    'ml-sync': { name: 'Sincronizar Órdenes', icon: CheckCircle, type: 'native' },
+    'apis-conexiones': { name: 'APIs y Conexiones', icon: Settings, type: 'native' },
+    'mis-etiquetas': { name: 'Mis Etiquetas', icon: FileText, type: 'native' },
+    
+    // 📊 Control Suite
+    'control-consolidador': { name: 'Consolidador 2.0', icon: Archive, type: 'native' },
+    'control-validador': { name: 'Validador', icon: CheckCircle, type: 'native' },
+    'control-trm': { name: 'TRM Monitor', icon: DollarSign, type: 'native' },
+    'control-gmail-drive': { name: 'Gmail Drive', icon: Mail, type: 'native' },
+    'google-api': { name: 'Google API', icon: Settings, type: 'native' },
+    
+    // 📦 Products Suite
+    'catalogo-amazon': { name: 'Catálogo Amazon', icon: Package, type: 'native' },
+    'publicaciones-ml': { name: 'Publicaciones ML', icon: ShoppingCart, type: 'native' },
+    'stock-proveedores': { name: 'Stock Proveedores', icon: Users, type: 'native' },
+    
+    // 👑 Super Admin
+    'admin-panel': { name: 'Panel Admin', icon: Shield, type: 'native' },
+    'admin-users': { name: 'Gestión de Usuarios', icon: UserCheck, type: 'native' },
+    'admin-system': { name: 'Monitor Sistema', icon: Settings, type: 'native' }
+  };
+
+  // 🔒 GENERAR ESTRUCTURA DE NAVEGACIÓN PERSONALIZADA basada en permisos del usuario
+  const getPersonalizedNavigation = () => {
+    console.log('🔍 [DEBUG] Usuario completo:', user);
+    console.log('🔍 [DEBUG] user.role_permissions (AuthContext):', user?.role_permissions);
+    console.log('🔍 [DEBUG] userRolePermissions (API):', userRolePermissions);
+    console.log('🔍 [DEBUG] permissionsLoaded:', permissionsLoaded);
+    console.log('🔍 [DEBUG] user.roles:', user?.roles);
+    
+    // Usar permisos de la API si están disponibles, sino usar los del contexto
+    const sourcePermissions = userRolePermissions || user?.role_permissions;
+    
+    if (!user || !sourcePermissions || sourcePermissions.length === 0) {
+      console.log('⚠️ [DEBUG] Sin permisos válidos - mostrando solo dashboard');
+      // Fallback: mostrar solo dashboard si no hay permisos
+      return {
+        navigation: {
+          title: "NAVEGACIÓN",
           items: [
-            { id: "control-consolidador", name: "Consolidador 2.0", icon: Archive },
-            { id: "control-validador", name: "Validador de Duplicados", icon: CheckCircle },
-            { id: "control-trm", name: "TRM - Tasas de Cambio", icon: DollarSign },
-            { id: "control-reportes", name: "Reportes de Utilidad", icon: TrendingUp },
-            { id: "control-gmail-drive", name: "Gmail Drive", icon: Mail },
-            { id: "control-google-api", name: "Google API", icon: Settings }
+            { id: "dashboard", name: "Dashboard", icon: BarChart3, type: "native" }
           ]
         }
-      ]
+      };
     }
+
+    const userPermissions = sourcePermissions;
+    const allowedModules = [];
+    
+    console.log('🔍 [DEBUG] Permisos finales del usuario:', userPermissions);
+
+    // 🔒 Filtrar solo módulos que el usuario tiene permitidos
+    userPermissions.forEach(moduleId => {
+      const moduleConfig = AVAILABLE_MODULES[moduleId];
+      if (moduleConfig) {
+        allowedModules.push({
+          id: moduleId,
+          name: moduleConfig.name,
+          icon: moduleConfig.icon,
+          type: moduleConfig.type
+        });
+      }
+    });
+
+    console.log(`🔒 Menú personalizado generado para ${user.roles?.[0] || 'usuario'}:`, allowedModules.map(m => m.name));
+    console.log('📋 [FINAL MENU] Módulos que verá el usuario:', allowedModules.map(m => `${m.icon} ${m.name} (${m.id})`));
+
+    return {
+      navigation: {
+        title: "MENÚ PERSONALIZADO",
+        items: allowedModules
+      }
+    };
   };
+
+  const [navigationStructure, setNavigationStructure] = useState(() => getPersonalizedNavigation());
+
+  // 🚀 NUEVO: Cargar permisos del usuario desde API cuando se monte el componente o cambie el usuario
+  useEffect(() => {
+    if (user && user.roles && user.roles.length > 0 && !permissionsLoaded) {
+      console.log('🔄 [SIDEBAR] Cargando permisos del usuario al montar componente');
+      loadUserRolePermissionsFromAPI();
+    }
+    
+    // 🧪 TEST: Ejecutar test de usuario Administrador
+    testAdminUser();
+  }, [user, permissionsLoaded]);
+
+  // 🔄 REACTIVO: Actualizar menú cuando cambien los permisos del usuario (desde API o contexto)
+  useEffect(() => {
+    const newNavigation = getPersonalizedNavigation();
+    setNavigationStructure(newNavigation);
+    console.log('🔄 Menú actualizado por cambio en permisos de usuario');
+  }, [user?.role_permissions, userRolePermissions, permissionsLoaded]); // Se ejecuta cuando cambien los permisos
+
+  // 🚀 TIEMPO REAL: Escuchar cambios de permisos desde AdminUsers
+  useEffect(() => {
+    const handlePermissionUpdate = (event) => {
+      const { role, allowedPages } = event.detail;
+      
+      // Si el usuario actual pertenece al rol modificado, recargar permisos desde la API
+      if (user?.roles?.includes(role)) {
+        console.log(`🚀 [TIEMPO REAL] Actualizando menú para rol ${role}:`, allowedPages);
+        
+        // Forzar recarga de permisos desde la API
+        setPermissionsLoaded(false);
+        loadUserRolePermissionsFromAPI().then(() => {
+          console.log('✅ [TIEMPO REAL] Menú actualizado desde API');
+        });
+      }
+    };
+
+    // Escuchar eventos de actualización de permisos
+    window.addEventListener('userPermissionsUpdated', handlePermissionUpdate);
+    
+    return () => {
+      window.removeEventListener('userPermissionsUpdated', handlePermissionUpdate);
+    };
+  }, [user]);
 
   return (
     <>

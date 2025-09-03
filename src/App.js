@@ -11,6 +11,15 @@ import AdminRegister from './pages/AdminRegister.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
+// Auto-test de permisos (solo en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  import('./tests/autotest-permissions').then(module => {
+    console.log('🤖 Auto-test de permisos cargado');
+  }).catch(err => {
+    console.warn('Auto-test no disponible:', err);
+  });
+}
+
 // Component to redirect preserving query parameters
 const RedirectWithParams = ({ to }) => {
   const location = useLocation();

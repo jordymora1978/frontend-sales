@@ -167,8 +167,12 @@ class AuthService {
     try {
       const response = await axios.get(`${AUTH_API_URL}/auth/me`);
       
-      if (response.data.user) {
-        this.user = response.data.user;
+      if (response.data) {
+        this.user = response.data; // Los datos están directamente en response.data
+        
+        // 🔧 FIXED: Obtener permisos reales del rol desde la BD
+        await this.loadUserRolePermissions();
+        
         localStorage.setItem(USER_KEY, JSON.stringify(this.user));
         return this.user;
       }
@@ -180,6 +184,41 @@ class AuthService {
         this.logout();
       }
       return null;
+    }
+  }
+
+  /**
+   * 🔧 FIXED: Cargar permisos reales del rol desde la base de datos
+   */
+  async loadUserRolePermissions() {
+    try {
+      if (!this.user || !this.user.roles || this.user.roles.length === 0) {
+        console.log('🔧 [AUTH] No user or roles, skipping permission load');
+        return;
+      }
+
+      const userRole = this.user.roles[0]; // Primary role
+      console.log(`🔧 [AUTH] Loading real permissions for role: ${userRole}`);
+
+      const response = await axios.get(`${AUTH_API_URL}/admin/role-permissions`);
+      
+      if (response.data && response.data.permissions && response.data.permissions[userRole]) {
+        // Agregar permisos reales del rol al objeto usuario
+        this.user.role_permissions = response.data.permissions[userRole];
+        this.user.restricted_pages = []; // Limpiar restricciones cuando se cargan permisos reales
+        
+        // 🚀 CRITICAL: Actualizar localStorage inmediatamente
+        localStorage.setItem(USER_KEY, JSON.stringify(this.user));
+        
+        console.log(`✅ [AUTH] Loaded real permissions for ${userRole}:`, this.user.role_permissions);
+      } else {
+        console.warn(`⚠️ [AUTH] No permissions found for role ${userRole} in BD`);
+        // Mantener como undefined para que use fallback
+      }
+
+    } catch (error) {
+      console.error('🔧 [AUTH] Error loading role permissions:', error);
+      // No bloquear el login si falla la carga de permisos
     }
   }
 
@@ -253,13 +292,25 @@ class AuthService {
   hasPermission(permissionType = 'read') {
     if (!this.user) return false;
     
-    // Check if user has roles (súper admin)
+    // Check if user has roles (súper admin) - ACCESO TOTAL
     if (this.user.roles?.includes('super_admin')) return true;
     
-    // Check new RBAC permissions format: sales:read, sales:write, sales:manage
+    // 🚀 EMPRESARIAL: Para aplicación de sales, si tiene role_permissions = puede acceder
+    // Los permisos específicos (read/write) se validan por página, no por app
+    if (this.user.role_permissions && Array.isArray(this.user.role_permissions)) {
+      // Si tiene permisos de rol definidos, puede acceder a la app de sales
+      return this.user.role_permissions.length > 0;
+    }
+    
+    // Fallback: Check legacy RBAC permissions format
     const requiredPermission = `sales:${permissionType}`;
     return this.user.permissions?.includes(requiredPermission) || 
-           this.user.permissions?.includes('sales:manage'); // manage includes all
+           this.user.permissions?.includes('sales:manage') ||
+           this.user.roles?.includes('admin') ||
+           this.user.roles?.includes('asesor') ||
+           this.user.roles?.includes('marketplace') ||
+           this.user.roles?.includes('dropshipper') ||
+           this.user.roles?.includes('proveedor');
   }
 
   /**
@@ -282,6 +333,14 @@ class AuthService {
       localStorage.setItem(REFRESH_TOKEN_KEY, this.refreshToken);
     }
     localStorage.setItem(USER_KEY, JSON.stringify(this.user));
+    
+    // 🚀 AUTO-LOAD: TEMPORARILY DISABLED - Causing 20 second delay
+    // TODO: Fix conflict between api.js and authService.js
+    // if (this.user && this.user.roles && this.user.roles.length > 0) {
+    //   this.loadUserRolePermissions().catch(error => {
+    //     console.warn('Failed to auto-load role permissions:', error);
+    //   });
+    // }
   }
 
   /**

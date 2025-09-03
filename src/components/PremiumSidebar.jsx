@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, createContext } from 'react';
+import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
@@ -121,7 +122,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
 
   // 🚀 ELIMINADO: Todo el sistema complejo de API permissions
 
-  // 🚀 SISTEMA HÍBRIDO: Sin parpadeos + Con restricciones individuales
+  // 🔧 FIXED: Sistema que consulta permisos REALES de la base de datos
   const hasPagePermission = (pageId) => {
     if (!user) return false;
     
@@ -131,19 +132,29 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
       userType = user.roles[0]; // First role is primary
     }
     
-    // 1. Check if page is allowed for user role (máximo permitido)
+    // 👑 SUPER ADMIN: Acceso total a todo
+    if (userType === 'super_admin') {
+      return true; // Super admin no tiene restricciones
+    }
+    
+    // 🚀 NUEVA LÓGICA: Usar permisos reales de la BD si están disponibles
+    if (user?.role_permissions && Array.isArray(user.role_permissions)) {
+      console.log(`🔍 [SIDEBAR] Usando permisos reales de BD para ${userType}:`, user.role_permissions);
+      return user.role_permissions.includes(pageId);
+    }
+    
+    // 🔄 FALLBACK: Si no hay permisos de BD, usar páginas hardcodeadas MENOS restricted_pages
     const rolePages = PAGES_BY_USER_TYPE[userType] || PAGES_BY_USER_TYPE['asesor'];
-    if (!rolePages.includes(pageId)) {
-      return false; // Página no permitida para este rol
-    }
     
-    // 2. Check individual restrictions (desde user data, no API)
+    // Si existe restricted_pages, filtrar esas páginas
     if (user?.restricted_pages && Array.isArray(user.restricted_pages)) {
-      return !user.restricted_pages.includes(pageId); // Si está restringida, no permitir
+      console.log(`⚠️ [SIDEBAR] Usando fallback hardcodeado para ${userType}, quitando:`, user.restricted_pages);
+      return rolePages.includes(pageId) && !user.restricted_pages.includes(pageId);
     }
     
-    // 3. Si no hay restricciones individuales, permitir todas las del rol
-    return true;
+    // Último fallback: usar solo las páginas del rol
+    console.log(`⚠️ [SIDEBAR] Usando fallback básico para ${userType}`);
+    return rolePages.includes(pageId);
   };
 
   // Check if a section has any pages with permissions

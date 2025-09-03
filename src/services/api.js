@@ -3,6 +3,7 @@ import config from '../config/api';
 class ApiService {
   constructor() {
     this.API_BASE = config.SALES_API_URL;
+    this.AUTH_API_BASE = config.AUTH_API_URL; // Direct auth API connection
     this.initializeAuth();
   }
 
@@ -31,8 +32,9 @@ class ApiService {
     }
   }
 
-  async request(endpoint, options = {}) {
-    const url = `${this.API_BASE}${endpoint}`;
+  async request(endpoint, options = {}, useAuthAPI = false) {
+    const baseURL = useAuthAPI ? this.AUTH_API_BASE : this.API_BASE;
+    const url = `${baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -46,10 +48,10 @@ class ApiService {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('🚀 API Request:', {
+      console.log(`🚀 ${useAuthAPI ? 'AUTH' : 'API'} Request:`, {
         url,
-        method: config.method || 'GET'
-        // Headers and body excluded for security
+        method: config.method || 'GET',
+        direct: useAuthAPI ? 'DIRECT TO AUTH API' : 'VIA SALES API'
       });
     }
 
@@ -87,17 +89,18 @@ class ApiService {
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ API Request failed:', error);
+        console.error(`❌ ${useAuthAPI ? 'AUTH' : 'API'} Request failed:`, error);
       }
       throw error;
     }
   }
 
   async login(email, password) {
+    // Direct connection to Auth API - eliminates proxy delay
     const response = await this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    });
+    }, true); // useAuthAPI = true for direct connection
 
     if (response.access_token) {
       this.token = response.access_token;
@@ -107,9 +110,10 @@ class ApiService {
       
       localStorage.setItem('auth_token', this.token);
       localStorage.setItem('token_expiry', expiry.toISOString());
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('user_data', JSON.stringify(response.user)); // Updated key to match AuthContext
       
       if (process.env.NODE_ENV === 'development') {
+        console.log(`🚀 PERFORMANCE: Direct Auth API connection used`);
         console.log(`🔑 Token stored, expires at: ${expiry.toLocaleString()}`);
       }
     }
@@ -119,7 +123,8 @@ class ApiService {
 
   async verifyToken() {
     try {
-      const response = await this.request('/auth/me');
+      // Direct connection to Auth API for verification
+      const response = await this.request('/auth/me', {}, true);
       return response;
     } catch (error) {
       this.logout();
@@ -131,7 +136,7 @@ class ApiService {
     this.token = null;
     localStorage.removeItem('auth_token');
     localStorage.removeItem('token_expiry');
-    localStorage.removeItem('user');
+    localStorage.removeItem('user_data'); // Updated key to match AuthContext
     if (process.env.NODE_ENV === 'development') {
       console.log('🚪 Logged out, auth cleared');
     }
@@ -204,7 +209,7 @@ class ApiService {
 
   getUser() {
     try {
-      return JSON.parse(localStorage.getItem('user') || '{}');
+      return JSON.parse(localStorage.getItem('user_data') || '{}'); // Updated key to match AuthContext
     } catch {
       return {};
     }

@@ -28,31 +28,65 @@ const AuthProviderInner = ({ children }) => {
 
   // 🔄 Carga inicial: Evita parpadeo al validar autenticación
   useEffect(() => {
-    const cachedUser = localStorage.getItem('user_data');
-    const token = localStorage.getItem('auth_token');
-    
-    if (cachedUser && token) {
-      try {
-        setUser(JSON.parse(cachedUser)); // Usuario disponible desde cache
-      } catch (e) {
-        console.error('Failed to parse cached user');
-        localStorage.removeItem('user_data');
+    const initializeUser = async () => {
+      const cachedUser = localStorage.getItem('user_data');
+      const token = localStorage.getItem('auth_token');
+      
+      if (cachedUser && token) {
+        try {
+          const parsedUser = JSON.parse(cachedUser);
+          setUser(parsedUser); // Usuario disponible desde cache inmediatamente
+          
+          // 🚀 TEMPORARILY DISABLED: Permission loading causing 20s delay
+          // TODO: Fix conflict between api.js and authService.js
+          // if (!parsedUser.role_permissions && parsedUser.roles && parsedUser.roles.length > 0) {
+          //   console.log('🔄 Loading role permissions for user...');
+          //   try {
+          //     // Cargar permisos del rol desde BD
+          //     await authService.loadUserRolePermissions();
+          //     const updatedUserData = localStorage.getItem('user_data');
+          //     if (updatedUserData) {
+          //       const updatedUser = JSON.parse(updatedUserData);
+          //       setUser(updatedUser); // Actualizar con permisos cargados
+          //       console.log('✅ Role permissions loaded:', updatedUser.role_permissions);
+          //     }
+          //   } catch (e) {
+          //     console.warn('Could not load role permissions on initialization');
+          //   }
+          // }
+        } catch (e) {
+          console.error('Failed to parse cached user');
+          localStorage.removeItem('user_data');
+        }
       }
-    }
-    
-    // Finalizar loading después de verificar cache
-    setLoading(false);
+      
+      // Finalizar loading después de verificar cache
+      setLoading(false);
+    };
+
+    initializeUser();
   }, []);
 
   const login = async (email, password) => {
     try {
       setError(null);
       
-      // ✅ REVERTIDO: Login normal con timeout rápido de 3 segundos
+      // ✅ PASO 1: Login normal 
       const response = await authService.login(email, password);
-      const userData = response.user || response;
-      setUser(userData);
+      let userData = response.user || response;
       
+      // ✅ TEMPORARILY DISABLED: Complete user data fetch causing delays
+      // TODO: Fix conflict between api.js and authService.js before re-enabling
+      // try {
+      //   const completeUserData = await authService.getCurrentUser();
+      //   if (completeUserData) {
+      //     userData = completeUserData;
+      //   }
+      // } catch (e) {
+      //   console.warn('Could not fetch complete user data, using login data');
+      // }
+      
+      setUser(userData);
       return userData;
     } catch (error) {
       console.error('Login error:', error);
@@ -126,6 +160,80 @@ const AuthProviderInner = ({ children }) => {
     }
   };
 
+  // 🚀 EMPRESARIAL: Función para forzar carga de permisos
+  const forceLoadPermissions = async () => {
+    try {
+      await authService.loadUserRolePermissions();
+      const updatedUserData = localStorage.getItem('user_data');
+      if (updatedUserData) {
+        const updatedUser = JSON.parse(updatedUserData);
+        setUser(updatedUser);
+        console.log('✅ [CONTEXT] Permissions force-loaded:', updatedUser.role_permissions);
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ [CONTEXT] Error force-loading permissions:', error);
+      return false;
+    }
+  };
+
+  // 🚀 TEMPORARILY DISABLED: AUTO-FIX causing login delays
+  // TODO: Fix conflict between api.js and authService.js before re-enabling
+  // useEffect(() => {
+  //   const autoLoadPermissions = async () => {
+  //     if (user && user.roles && user.roles.length > 0 && !user.role_permissions) {
+  //       console.log('🔧 [AUTO-FIX] User without role_permissions detected, force loading...');
+  //       const success = await forceLoadPermissions();
+  //       if (success) {
+  //         console.log('✅ [AUTO-FIX] Permissions loaded automatically');
+  //       }
+  //     }
+  //   };
+
+  //   // Delay para evitar loops infinitos
+  //   const timer = setTimeout(autoLoadPermissions, 1000);
+  //   return () => clearTimeout(timer);
+  // }, [user]); // Solo cuando cambie el usuario
+
+  // 🚀 SIMPLE Y EFECTIVO: Escuchar cambios de permisos
+  useEffect(() => {
+    // Escuchar eventos de actualización de permisos
+    const handlePermissionUpdate = (event) => {
+      console.log(`⚡ [PERMISSION UPDATE] Detected:`, event.detail);
+      // Forzar re-render del contexto para que el sidebar se actualice
+      setUser(prevUser => ({ ...prevUser }));
+    };
+
+    // Escuchar cambios en localStorage de otras ventanas
+    const handleStorageChange = (event) => {
+      if (event.key === 'permission_update_trigger') {
+        const updateData = JSON.parse(event.newValue || '{}');
+        console.log(`⚡ [CROSS-WINDOW UPDATE] Detected:`, updateData);
+        
+        // Actualizar usuario si es del rol afectado
+        const userData = localStorage.getItem('user_data');
+        if (userData && user) {
+          const currentUser = JSON.parse(userData);
+          if (currentUser.roles && currentUser.roles.includes(updateData.role)) {
+            // 🔧 FIXED: Actualizar role_permissions reales en lugar de restricted_pages
+            currentUser.role_permissions = updateData.allowedPages;
+            localStorage.setItem('user_data', JSON.stringify(currentUser));
+            setUser(currentUser);
+            console.log(`✅ [CROSS-WINDOW UPDATE] Updated role_permissions:`, updateData.allowedPages);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('userPermissionsUpdated', handlePermissionUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('userPermissionsUpdated', handlePermissionUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [user]);
+
   // Permission checking helpers
   const hasPermission = (permissionType = 'read') => {
     return authService.hasPermission(permissionType);
@@ -148,6 +256,7 @@ const AuthProviderInner = ({ children }) => {
     login,
     logout,
     refreshUser,
+    forceLoadPermissions,
     hasPermission,
     isAdmin,
     isAuthenticated,

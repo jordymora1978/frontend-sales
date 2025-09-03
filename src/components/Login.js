@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -10,50 +10,147 @@ const Login = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
+
+  // Security utilities
+  const RATE_LIMIT_KEY = 'dropux_login_attempts';
+  const RATE_LIMIT_TIME_KEY = 'dropux_last_attempt';
+  const MAX_ATTEMPTS = 3;
+  const BLOCK_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Form validation
+  const validateForm = useCallback(() => {
+    const errors = {};
+    
+    // Email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!formData.email.trim()) {
+      errors.email = 'El email es requerido';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = 'Formato de email inválido';
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      errors.password = 'La contraseña es requerida';
+    } else if (formData.password.length < 6) {
+      errors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [formData]);
+
+  // Rate limiting check
+  const checkRateLimit = useCallback(() => {
+    const attempts = parseInt(localStorage.getItem(RATE_LIMIT_KEY) || '0');
+    const lastAttempt = localStorage.getItem(RATE_LIMIT_TIME_KEY);
+    
+    if (attempts >= MAX_ATTEMPTS && lastAttempt) {
+      const timeDiff = Date.now() - parseInt(lastAttempt);
+      if (timeDiff < BLOCK_DURATION) {
+        const remainingTime = Math.ceil((BLOCK_DURATION - timeDiff) / 1000 / 60);
+        setIsBlocked(true);
+        setBlockTimeRemaining(remainingTime);
+        setError(`Demasiados intentos fallidos. Inténtalo de nuevo en ${remainingTime} minutos.`);
+        return false;
+      } else {
+        // Reset attempts after block duration
+        localStorage.removeItem(RATE_LIMIT_KEY);
+        localStorage.removeItem(RATE_LIMIT_TIME_KEY);
+      }
+    }
+    
+    setIsBlocked(false);
+    return true;
+  }, []);
+
+  // Record failed attempt
+  const recordFailedAttempt = useCallback(() => {
+    const attempts = parseInt(localStorage.getItem(RATE_LIMIT_KEY) || '0');
+    localStorage.setItem(RATE_LIMIT_KEY, (attempts + 1).toString());
+    localStorage.setItem(RATE_LIMIT_TIME_KEY, Date.now().toString());
+  }, []);
+
+  // Clear failed attempts on success
+  const clearFailedAttempts = useCallback(() => {
+    localStorage.removeItem(RATE_LIMIT_KEY);
+    localStorage.removeItem(RATE_LIMIT_TIME_KEY);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setValidationErrors({});
 
-    // Login attempt started
+    // Check rate limiting first
+    if (!checkRateLimit()) {
+      setLoading(false);
+      return;
+    }
+
+    // Validate form
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await apiService.login(formData.email, formData.password);
-      // Login successful
+      
+      // Login successful - clear any failed attempts
+      clearFailedAttempts();
       onLoginSuccess(response);
+      
     } catch (error) {
-      // Login failed - check console for details in development
+      // Record failed attempt for rate limiting
+      recordFailedAttempt();
+      
+      // Log details only in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Login failed:', error.message);
+        console.error('Login failed:', error.message);
       }
       
-      // Mostrar el error real del servidor o un mensaje genérico
-      if (error.message.includes('CORS')) {
-        setError('Error de conexión con el servidor. Por favor intenta más tarde.');
-      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        setError('No se puede conectar con el servidor. Verifica tu conexión.');
-      } else if (error.message.includes('401') || error.message.includes('Session expired')) {
-        setError('Credenciales inválidas. Verifica tu email y contraseña.');
-      } else {
-        // No exponer mensajes del servidor - usar mensaje genérico seguro
-        setError('Error al iniciar sesión. Por favor intenta de nuevo.');
-        // Solo log en desarrollo
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Login error details:', error.message);
-        }
+      // Use generic error message to prevent information disclosure
+      setError('Credenciales inválidas. Verifica tu email y contraseña.');
+      
+      // Check if this was the final allowed attempt
+      const attempts = parseInt(localStorage.getItem(RATE_LIMIT_KEY) || '0');
+      if (attempts >= MAX_ATTEMPTS) {
+        setIsBlocked(true);
+        setBlockTimeRemaining(5);
+        setError('Demasiados intentos fallidos. Inténtalo de nuevo en 5 minutos.');
       }
+      
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  // Optimized change handler with validation clearing
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prevErrors => ({
+        ...prevErrors,
+        [name]: undefined
+      }));
+    }
+    
+    // Clear general error when user starts typing
+    if (error) {
+      setError('');
+    }
+  }, [validationErrors, error]);
 
   return (
     <div className="login-container">
@@ -77,8 +174,16 @@ const Login = ({ onLoginSuccess }) => {
                 placeholder="admin@dropux.co"
                 required
                 autoComplete="email"
+                className={validationErrors.email ? 'input-error' : ''}
+                aria-describedby={validationErrors.email ? 'email-error' : undefined}
               />
             </div>
+            {validationErrors.email && (
+              <div id="email-error" className="validation-error">
+                <AlertCircle size={14} />
+                {validationErrors.email}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -94,6 +199,8 @@ const Login = ({ onLoginSuccess }) => {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
+                className={validationErrors.password ? 'input-error' : ''}
+                aria-describedby={validationErrors.password ? 'password-error' : undefined}
               />
               <button
                 type="button"
@@ -106,6 +213,12 @@ const Login = ({ onLoginSuccess }) => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            {validationErrors.password && (
+              <div id="password-error" className="validation-error">
+                <AlertCircle size={14} />
+                {validationErrors.password}
+              </div>
+            )}
           </div>
 
           {error && (
@@ -118,9 +231,14 @@ const Login = ({ onLoginSuccess }) => {
           <button 
             type="submit" 
             className="login-button"
-            disabled={loading}
+            disabled={loading || isBlocked}
           >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            {loading 
+              ? 'Iniciando sesión...' 
+              : isBlocked 
+                ? `Bloqueado (${blockTimeRemaining} min)`
+                : 'Iniciar Sesión'
+            }
           </button>
         </form>
 
@@ -214,6 +332,19 @@ const Login = ({ onLoginSuccess }) => {
           border-color: #667eea;
         }
 
+        .input-with-icon input.input-error {
+          border-color: #dc3545;
+        }
+
+        .validation-error {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #dc3545;
+          font-size: 13px;
+          margin-top: 4px;
+        }
+
         .password-toggle {
           position: absolute;
           right: 12px;
@@ -261,6 +392,11 @@ const Login = ({ onLoginSuccess }) => {
         .login-button:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+          transform: none !important;
+        }
+
+        .login-button:disabled:hover {
+          box-shadow: none;
         }
 
         .login-footer {
