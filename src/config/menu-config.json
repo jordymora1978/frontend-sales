@@ -1,0 +1,425 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-17",
+  "roles": {
+    "super_admin": {
+      "displayName": "👑 Super Admin",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard",
+          "path": "/dashboard",
+          "order": 1
+        },
+        {
+          "id": "orders2_0", 
+          "name": "Órdenes Pro",
+          "icon": "ShoppingBag",
+          "path": "/orders2_0",
+          "order": 2
+        },
+        {
+          "id": "customers",
+          "name": "Clientes", 
+          "icon": "Users",
+          "path": "/customers",
+          "order": 3
+        },
+        {
+          "id": "quotes",
+          "name": "Cotizaciones",
+          "icon": "FileText", 
+          "path": "/quotes",
+          "order": 4
+        }
+      ],
+      "sections": {
+        "configuration": {
+          "name": "Configuración",
+          "icon": "Settings",
+          "items": [
+            {
+              "id": "ml-stores",
+              "name": "Mis Tiendas",
+              "icon": "Package",
+              "path": "/ml-stores"
+            },
+            {
+              "id": "ml-sync",
+              "name": "Sincronizar Órdenes", 
+              "icon": "RefreshCw",
+              "path": "/ml-sync"
+            },
+            {
+              "id": "apis-conexiones",
+              "name": "APIs y Conexiones",
+              "icon": "Key",
+              "path": "/apis-conexiones"
+            },
+            {
+              "id": "mis-etiquetas",
+              "name": "Mis Etiquetas",
+              "icon": "Tag",
+              "path": "/mis-etiquetas"
+            }
+          ]
+        },
+        "control": {
+          "name": "Control Suite",
+          "icon": "FolderOpen", 
+          "items": [
+            {
+              "id": "control-consolidador",
+              "name": "Consolidador 2.0",
+              "icon": "Archive",
+              "path": "/control-consolidador"
+            },
+            {
+              "id": "control-validador", 
+              "name": "Validador",
+              "icon": "CheckCircle2",
+              "path": "/control-validador"
+            },
+            {
+              "id": "control-trm",
+              "name": "TRM Monitor", 
+              "icon": "DollarSign",
+              "path": "/control-trm"
+            },
+            {
+              "id": "control-reportes",
+              "name": "Reportes",
+              "icon": "TrendingUp", 
+              "path": "/control-reportes"
+            },
+            {
+              "id": "control-gmail-drive",
+              "name": "Gmail Drive",
+              "icon": "Mail",
+              "path": "/control-gmail-drive"
+            },
+            {
+              "id": "google-api",
+              "name": "Google API",
+              "icon": "Cloud", 
+              "path": "/google-api"
+            }
+          ]
+        },
+        "products": {
+          "name": "Products Suite",
+          "icon": "Package",
+          "items": [
+            {
+              "id": "catalogo-amazon",
+              "name": "Catálogo Amazon",
+              "icon": "Package",
+              "path": "/catalogo-amazon"
+            },
+            {
+              "id": "publicaciones-ml", 
+              "name": "Publicaciones ML",
+              "icon": "ShoppingBag",
+              "path": "/publicaciones-ml"
+            },
+            {
+              "id": "stock-proveedores",
+              "name": "Stock Proveedores",
+              "icon": "Truck",
+              "path": "/stock-proveedores"
+            }
+          ]
+        },
+        "admin": {
+          "name": "Administración",
+          "icon": "Shield",
+          "items": [
+            {
+              "id": "admin-panel",
+              "name": "Panel Admin", 
+              "icon": "Shield",
+              "path": "/admin",
+              "badge": "new"
+            },
+            {
+              "id": "admin-users",
+              "name": "Gestionar Usuarios",
+              "icon": "User",
+              "path": "/admin/users"
+            },
+            {
+              "id": "admin-system",
+              "name": "Monitor Sistema",
+              "icon": "Activity", 
+              "path": "/admin/system"
+            }
+          ]
+        }
+      }
+    },
+    "admin": {
+      "displayName": "🛡️ Administrador",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard", 
+          "icon": "LayoutDashboard",
+          "path": "/dashboard",
+          "order": 1
+        },
+        {
+          "id": "orders2_0",
+          "name": "Órdenes Pro",
+          "icon": "ShoppingBag", 
+          "path": "/orders2_0",
+          "order": 2
+        },
+        {
+          "id": "customers",
+          "name": "Clientes",
+          "icon": "Users",
+          "path": "/customers",
+          "order": 3
+        },
+        {
+          "id": "quotes",
+          "name": "Cotizaciones",
+          "icon": "FileText",
+          "path": "/quotes",
+          "order": 4
+        }
+      ],
+      "sections": {
+        "reports": {
+          "name": "Reportes",
+          "icon": "TrendingUp",
+          "items": [
+            {
+              "id": "control-reportes",
+              "name": "Reportes",
+              "icon": "TrendingUp",
+              "path": "/control-reportes"
+            }
+          ]
+        },
+        "admin": {
+          "name": "Administración", 
+          "icon": "Shield",
+          "items": [
+            {
+              "id": "admin-users",
+              "name": "Gestionar Usuarios",
+              "icon": "User",
+              "path": "/admin/users"
+            },
+            {
+              "id": "admin-system",
+              "name": "Monitor Sistema",
+              "icon": "Activity",
+              "path": "/admin/system"
+            }
+          ]
+        }
+      }
+    },
+    "asesor": {
+      "displayName": "👨‍💼 Asesor",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard", 
+          "path": "/dashboard",
+          "order": 1
+        },
+        {
+          "id": "orders2_0",
+          "name": "Órdenes Pro",
+          "icon": "ShoppingBag",
+          "path": "/orders2_0",
+          "order": 2
+        },
+        {
+          "id": "customers",
+          "name": "Clientes",
+          "icon": "Users",
+          "path": "/customers",
+          "order": 3
+        },
+        {
+          "id": "quotes", 
+          "name": "Cotizaciones",
+          "icon": "FileText",
+          "path": "/quotes",
+          "order": 4
+        }
+      ],
+      "sections": {
+        "reports": {
+          "name": "Reportes",
+          "icon": "TrendingUp",
+          "items": [
+            {
+              "id": "control-reportes",
+              "name": "Reportes", 
+              "icon": "TrendingUp",
+              "path": "/control-reportes"
+            }
+          ]
+        }
+      }
+    },
+    "marketplace": {
+      "displayName": "🏪 Marketplace",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard",
+          "path": "/dashboard",
+          "order": 1
+        },
+        {
+          "id": "orders2_0",
+          "name": "Órdenes Pro", 
+          "icon": "ShoppingBag",
+          "path": "/orders2_0",
+          "order": 2
+        }
+      ],
+      "sections": {
+        "marketplace": {
+          "name": "Marketplace",
+          "icon": "ShoppingBag", 
+          "items": [
+            {
+              "id": "ml-stores",
+              "name": "Mis Tiendas",
+              "icon": "Package",
+              "path": "/ml-stores"
+            },
+            {
+              "id": "ml-sync",
+              "name": "Sincronizar Órdenes",
+              "icon": "RefreshCw",
+              "path": "/ml-sync"
+            },
+            {
+              "id": "publicaciones-ml",
+              "name": "Publicaciones ML",
+              "icon": "ShoppingBag", 
+              "path": "/publicaciones-ml"
+            }
+          ]
+        }
+      }
+    },
+    "dropshipper": {
+      "displayName": "📦 Dropshipper",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard",
+          "path": "/dashboard", 
+          "order": 1
+        },
+        {
+          "id": "orders2_0",
+          "name": "Órdenes Pro",
+          "icon": "ShoppingBag",
+          "path": "/orders2_0",
+          "order": 2
+        },
+        {
+          "id": "customers",
+          "name": "Clientes",
+          "icon": "Users", 
+          "path": "/customers",
+          "order": 3
+        }
+      ],
+      "sections": {
+        "products": {
+          "name": "Productos",
+          "icon": "Package",
+          "items": [
+            {
+              "id": "catalogo-amazon",
+              "name": "Catálogo Amazon",
+              "icon": "Package",
+              "path": "/catalogo-amazon"
+            },
+            {
+              "id": "stock-proveedores",
+              "name": "Stock Proveedores", 
+              "icon": "Truck",
+              "path": "/stock-proveedores"
+            }
+          ]
+        }
+      }
+    },
+    "proveedor": {
+      "displayName": "🚚 Proveedor",
+      "mainMenu": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard",
+          "path": "/dashboard",
+          "order": 1
+        }
+      ],
+      "sections": {
+        "inventory": {
+          "name": "Inventario",
+          "icon": "Truck", 
+          "items": [
+            {
+              "id": "stock-proveedores",
+              "name": "Stock Proveedores",
+              "icon": "Truck",
+              "path": "/stock-proveedores"
+            }
+          ]
+        },
+        "reports": {
+          "name": "Reportes",
+          "icon": "TrendingUp",
+          "items": [
+            {
+              "id": "control-reportes",
+              "name": "Reportes",
+              "icon": "TrendingUp",
+              "path": "/control-reportes"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "iconMapping": {
+    "LayoutDashboard": "LayoutDashboard",
+    "ShoppingBag": "ShoppingBag", 
+    "Users": "Users",
+    "FileText": "FileText",
+    "Package": "Package",
+    "RefreshCw": "RefreshCw",
+    "Key": "Key",
+    "Tag": "Tag",
+    "Settings": "Settings",
+    "FolderOpen": "FolderOpen",
+    "Archive": "Archive",
+    "CheckCircle2": "CheckCircle2", 
+    "DollarSign": "DollarSign",
+    "TrendingUp": "TrendingUp",
+    "Mail": "Mail",
+    "Cloud": "Cloud",
+    "Shield": "Shield",
+    "User": "User",
+    "Activity": "Activity",
+    "Truck": "Truck"
+  }
+}

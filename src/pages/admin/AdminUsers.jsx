@@ -8,9 +8,8 @@ import './AdminUsers.css';
 const AVAILABLE_PAGES = {
     main: [
         { id: 'dashboard', name: 'Dashboard', icon: '📊', path: '/dashboard' },
-        { id: 'orders2_0', name: 'Mis Ventas', icon: '🛒', path: '/orders2_0' },
-        { id: 'customers', name: 'Mis Clientes', icon: '👥', path: '/customers' },
-        { id: 'control-reportes', name: 'Mis Reportes', icon: '📈', path: '/control-reportes' },
+        { id: 'orders2_0', name: 'Órdenes Pro', icon: '🛒', path: '/orders2_0' },
+        { id: 'customers', name: 'Clientes', icon: '👥', path: '/customers' },
         { id: 'quotes', name: 'Cotizaciones', icon: '📄', path: '/quotes' }
     ],
     config: [
@@ -23,6 +22,7 @@ const AVAILABLE_PAGES = {
         { id: 'control-consolidador', name: 'Consolidador 2.0', icon: '📦', path: '/control-consolidador' },
         { id: 'control-validador', name: 'Validador', icon: '✅', path: '/control-validador' },
         { id: 'control-trm', name: 'TRM Monitor', icon: '💱', path: '/control-trm' },
+        { id: 'control-reportes', name: 'Reportes', icon: '📊', path: '/control-reportes' },
         { id: 'control-gmail-drive', name: 'Gmail Drive', icon: '📧', path: '/control-gmail-drive' },
         { id: 'google-api', name: 'Google API', icon: '☁️', path: '/google-api' }
     ],
@@ -34,7 +34,10 @@ const AVAILABLE_PAGES = {
     superadmin: [
         { id: 'admin-panel', name: 'Panel Admin', icon: '🎛️', path: '/admin' },
         { id: 'admin-users', name: 'Gestión de Usuarios', icon: '👥', path: '/admin/users' },
-        { id: 'admin-system', name: 'Monitor Sistema', icon: '⚙️', path: '/admin/system' }
+        { id: 'admin-system', name: 'Monitor Sistema', icon: '⚙️', path: '/admin/system' },
+        { id: 'admin', name: 'Panel Admin', icon: '🎛️', path: '/admin' },
+        { id: 'admin/users', name: 'Gestión de Usuarios', icon: '👥', path: '/admin/users' },
+        { id: 'admin/system', name: 'Monitor Sistema', icon: '⚙️', path: '/admin/system' }
     ]
 };
 
@@ -48,7 +51,7 @@ const USER_TYPES = {
 const DEFAULT_ROLE_PERMISSIONS = {
     // Usuarios Administrativos
     'super_admin': [...Object.values(AVAILABLE_PAGES).flat().map(p => p.id)], // Super Admin tiene acceso a TODO
-    'admin': ['dashboard', 'orders2_0', 'customers', 'control-reportes', 'quotes', 'ml-stores', 'ml-sync', 'control-consolidador', 'control-validador'],
+    'admin': ['dashboard', 'orders2_0', 'customers', 'quotes', 'ml-stores', 'ml-sync', 'control-consolidador', 'control-validador', 'control-reportes'],
     'asesor': ['dashboard', 'customers', 'control-reportes', 'quotes'],
     
     // Usuarios del Sistema  
@@ -336,13 +339,16 @@ const AdminUsers = () => {
             console.log(`🚀 API Call: Saving ${permissions.length} permissions for role ${role}`);
             console.log(`📤 Permissions data:`, permissions);
             
-            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_ROLE_PERMISSIONS}?role_name=${role}`, {
+            const response = await fetch(`${AUTH_API_URL}${ENDPOINTS.ADMIN.SAVE_ROLE_PERMISSIONS}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(permissions)
+                body: JSON.stringify({
+                    role_name: role,
+                    permissions: permissions
+                })
             });
             
             console.log(`📡 API Response status:`, response.status);
@@ -1320,9 +1326,9 @@ const AdminUsers = () => {
                                 return (
                                         <div
                                             key={role}
-                                            className="profile-container"
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e) => handleDropOnRole(e, role)}
+                                            className={`profile-container ${role === 'super_admin' ? 'immutable-role' : ''}`}
+                                            onDragOver={role !== 'super_admin' ? handleDragOver : undefined}
+                                            onDrop={role !== 'super_admin' ? (e) => handleDropOnRole(e, role) : undefined}
                                         >
                                             <div className="profile-header">
                                                 <div className="profile-title">
@@ -1342,26 +1348,33 @@ const AdminUsers = () => {
                                                     {(permissions || []).map(pageId => {
                                                         const allPages = Object.values(AVAILABLE_PAGES).flat();
                                                         const page = allPages.find(p => p.id === pageId);
-                                                        if (!page && !['admin', 'admin/users', 'admin/system'].includes(pageId)) return null;
+                                                        // Siempre mostrar el módulo, aunque no esté en AVAILABLE_PAGES
                                                         
                                                         return (
                                                             <div key={pageId} className="menu-item">
                                                                 <span className="item-icon">{page?.icon || '⚙️'}</span>
                                                                 <span className="item-name">{page?.name || pageId}</span>
-                                                                <button
-                                                                    onClick={() => removePageFromRole(pageId, role)}
-                                                                    className="remove-item-btn"
-                                                                    title="Quitar del menú"
-                                                                >
-                                                                    ✖️
-                                                                </button>
+                                                                {role !== 'super_admin' && (
+                                                                    <button
+                                                                        onClick={() => removePageFromRole(pageId, role)}
+                                                                        className="remove-item-btn"
+                                                                        title="Quitar del menú"
+                                                                    >
+                                                                        ✖️
+                                                                    </button>
+                                                                )}
+                                                                {role === 'super_admin' && (
+                                                                    <span className="immutable-badge" title="Super Admin tiene acceso completo e inmutable">🔒</span>
+                                                                )}
                                                             </div>
                                                         );
                                                     })}
                                                     
                                                     {permissions.length === 0 && (
                                                         <div className="empty-menu">
-                                                            <span>📋 Arrastra módulos aquí para personalizar el menú</span>
+                                                            <span>{role === 'super_admin' ? 
+                                                                '👑 Super Admin tiene acceso completo automático' : 
+                                                                '📋 Arrastra módulos aquí para personalizar el menú'}</span>
                                                         </div>
                                                     )}
                                                 </div>

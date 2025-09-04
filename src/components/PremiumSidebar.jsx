@@ -35,6 +35,7 @@ import {
 import './PremiumSidebar.css';
 import { useAuth } from '../context/AuthContext';
 import authService from '../services/authService';
+import menuJSONService from '../services/MenuJSONService';
 
 // 🚀 SISTEMA SIMPLE Y CONFIABLE - PÁGINAS POR TIPO DE USUARIO
 const PAGES_BY_USER_TYPE = {
@@ -122,7 +123,7 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
 
   // 🚀 ELIMINADO: Todo el sistema complejo de API permissions
 
-  // 🔧 FIXED: Sistema que consulta permisos REALES de la base de datos
+  // 🔧 JSON-BASED: Sistema que usa configuración JSON
   const hasPagePermission = (pageId) => {
     if (!user) return false;
     
@@ -137,24 +138,10 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
       return true; // Super admin no tiene restricciones
     }
     
-    // 🚀 NUEVA LÓGICA: Usar permisos reales de la BD si están disponibles
-    if (user?.role_permissions && Array.isArray(user.role_permissions)) {
-      console.log(`🔍 [SIDEBAR] Usando permisos reales de BD para ${userType}:`, user.role_permissions);
-      return user.role_permissions.includes(pageId);
-    }
-    
-    // 🔄 FALLBACK: Si no hay permisos de BD, usar páginas hardcodeadas MENOS restricted_pages
-    const rolePages = PAGES_BY_USER_TYPE[userType] || PAGES_BY_USER_TYPE['asesor'];
-    
-    // Si existe restricted_pages, filtrar esas páginas
-    if (user?.restricted_pages && Array.isArray(user.restricted_pages)) {
-      console.log(`⚠️ [SIDEBAR] Usando fallback hardcodeado para ${userType}, quitando:`, user.restricted_pages);
-      return rolePages.includes(pageId) && !user.restricted_pages.includes(pageId);
-    }
-    
-    // Último fallback: usar solo las páginas del rol
-    console.log(`⚠️ [SIDEBAR] Usando fallback básico para ${userType}`);
-    return rolePages.includes(pageId);
+    // Use DYNAMIC pre-loaded permissions for fast checking
+    const hasAccess = userPermissions.has(pageId);
+    console.log(`🔍 [SIDEBAR] Permission check for '${pageId}':`, hasAccess);
+    return hasAccess;
   };
 
   // Check if a section has any pages with permissions
@@ -190,20 +177,63 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     return roleNames[role] || 'Usuario';
   };
 
-  // 🚀 DYNAMIC: Generate menu items based on actual user permissions
-  const menuItems = useMemo(() => {
-    if (!user || !user.role_permissions) return [];
-    
-    const permissionToMenuItem = {
-      'dashboard': { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, badge: null, path: '/dashboard' },
-      'sales': { id: 'sales', name: 'Ventas', icon: ShoppingBag, badge: null, path: '/sales' },
-      'admin-users': { id: 'admin-users', name: 'Gestión de Usuarios', icon: Users, badge: null, path: '/admin/users' },
-      'catalogo-amazon': { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: Package, badge: null, path: '/catalogo-amazon' }
+  // 🚀 DYNAMIC: Generate menu items and permissions from dynamic API configuration
+  const [menuItems, setMenuItems] = useState([]);
+  const [userPermissions, setUserPermissions] = useState(new Set());
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+
+  useEffect(() => {
+    const loadDynamicMenu = async () => {
+      if (!user) {
+        setMenuItems([]);
+        setUserPermissions(new Set());
+        setIsLoadingMenu(false);
+        return;
+      }
+
+      setIsLoadingMenu(true);
+      
+      // Get user type from roles array or user_type field
+      let userType = user?.user_type;
+      if (user?.roles && user.roles.length > 0) {
+        userType = user.roles[0]; // First role is primary
+      }
+
+      try {
+        // Load both menu items and permissions dynamically
+        const [dynamicMenuItems, dynamicPermissions] = await Promise.all([
+          menuJSONService.getMainMenuForRoleDynamic(userType),
+          menuJSONService.getDynamicPermissions()
+        ]);
+
+        if (dynamicMenuItems && dynamicMenuItems.length > 0) {
+          console.log('✅ [SIDEBAR] Using DYNAMIC menu system with', dynamicMenuItems.length, 'items');
+          setMenuItems(dynamicMenuItems);
+        } else {
+          // Fallback: basic menu while loading
+          setMenuItems([
+            { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }
+          ]);
+        }
+
+        // Set user permissions for fast filtering
+        const rolePermissions = dynamicPermissions[userType] || [];
+        setUserPermissions(new Set(rolePermissions));
+        console.log('✅ [SIDEBAR] Loaded permissions for', userType, ':', rolePermissions);
+
+      } catch (error) {
+        console.warn('⚠️ [SIDEBAR] Dynamic menu failed, using fallback:', error);
+        // Fallback: basic menu on error
+        setMenuItems([
+          { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }
+        ]);
+        setUserPermissions(new Set(['dashboard']));
+      } finally {
+        setIsLoadingMenu(false);
+      }
     };
-    
-    return user.role_permissions
-      .map(permission => permissionToMenuItem[permission])
-      .filter(item => item); // Remove undefined items
+
+    loadDynamicMenu();
   }, [user]);
 
   // System section pages (always visible but filtered by permissions)
