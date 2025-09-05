@@ -4,12 +4,12 @@ import PremiumSidebar, { ThemeProvider as PremiumThemeProvider } from './Premium
 import PremiumHeader from './PremiumHeader';
 import OrdersPage2_0 from '../pages/OrdersPage2_0';
 import CustomersPage from '../pages/CustomersPage';
-import CatalogoAmazon from '../pages/CatalogoAmazon';
-import PublicacionesML from '../pages/PublicacionesML';
-import StockProveedores from '../pages/StockProveedores';
+import AmazonCatalog from '../pages/products/AmazonCatalog';
+import MLPublications from '../pages/products/MLPublications';
+import SuppliersStock from '../pages/products/SuppliersStock';
 import QuotesPageComponent from './QuotesPage';
 import SalesDashboardPage from '../pages/SalesDashboardPage';
-import SincOrdersMeli from '../pages/SincOrdersMeli';
+import MLOrdersSync from '../pages/MLOrdersSync';
 import ConsolidadorPage from '../pages/control/ConsolidadorPage';
 import ValidadorPage from '../pages/control/ValidadorPage';
 import TRMPage from '../pages/control/TRMPage';
@@ -17,12 +17,14 @@ import ReportesPage from '../pages/control/ReportesPage';
 import GmailDrivePage from '../pages/control/GmailDrivePage';
 import GoogleAPI from '../pages/GoogleAPI';
 import ConnectMLStore from './ConnectMLStore';
-import MisEtiquetas from '../pages/MisEtiquetas';
-import APIsConexiones from '../pages/APIsConexiones';
+import MyLabels from '../pages/MyLabels';
+import APIConnections from '../pages/APIConnections';
 import MLStoresPage from '../pages/MLStoresPage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
-import AdminUsers from '../pages/admin/AdminUsers';
 import AdminSystem from '../pages/admin/AdminSystem';
+import CustomMenu from '../pages/admin/CustomMenu';
+import Roles from '../pages/admin/Roles';
+import PrivatePages from '../pages/admin/PrivatePages';
 
 const AppWithRoutes = () => {
   const [showMobileMenu, setShowMobileMenu] = React.useState(false);
@@ -69,27 +71,35 @@ const AppWithRoutes = () => {
               <Route path="/orders2_0" element={<OrdersPage2_0 />} />
               <Route path="/quotes" element={<QuotesPageComponent />} />
               <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/catalogo-amazon" element={<CatalogoAmazon />} />
-              <Route path="/publicaciones-ml" element={<PublicacionesML />} />
-              <Route path="/stock-proveedores" element={<StockProveedores />} />
+              <Route path="/catalogo-amazon" element={<AmazonCatalog />} />
+              <Route path="/publicaciones-ml" element={<MLPublications />} />
+              <Route path="/stock-proveedores" element={<SuppliersStock />} />
               <Route path="/ml-stores" element={
                 <MLStoresPage 
                   showConnectML={showConnectML}
                   setShowConnectML={setShowConnectML}
                 />
               } />
-              <Route path="/ml-sync" element={<SincOrdersMeli />} />
+              <Route path="/ml-sync" element={<MLOrdersSync />} />
               <Route path="/google-api" element={<GoogleAPI />} />
               <Route path="/control-consolidador" element={<ConsolidadorPage />} />
               <Route path="/control-validador" element={<ValidadorPage />} />
               <Route path="/control-trm" element={<TRMPage />} />
               <Route path="/control-reportes" element={<ReportesPage />} />
               <Route path="/control-gmail-drive" element={<GmailDrivePage />} />
-              <Route path="/mis-etiquetas" element={<MisEtiquetas />} />
-              <Route path="/apis-conexiones" element={<APIsConexiones />} />
+              <Route path="/mis-etiquetas" element={<MyLabels />} />
+              <Route path="/apis-conexiones" element={<APIConnections />} />
+              {/* Redirecciones de padres a primer hijo */}
+              <Route path="/settings" element={<Navigate to="/mis-etiquetas" />} />
+              <Route path="/business-reports" element={<Navigate to="/control-consolidador" />} />
+              <Route path="/product-management" element={<Navigate to="/catalogo-amazon" />} />
+              
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/users" element={<Roles />} />
               <Route path="/admin/system" element={<AdminSystem />} />
+              {/* Nuevas páginas separadas */}
+              <Route path="/admin/custom-menu" element={<CustomMenu />} />
+              <Route path="/admin/private-pages" element={<PrivatePages />} />
               {/* 404 - Mantener usuario en página actual, no redirigir */}
               <Route path="*" element={
                 <div className="min-h-screen flex items-center justify-center">

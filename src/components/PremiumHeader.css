@@ -307,9 +307,6 @@ main {
   transition: all 0.2s ease;
 }
 
-.user-menu-trigger:hover {
-  background: var(--header-btn-hover);
-}
 
 .user-avatar {
   display: flex;
@@ -347,6 +344,14 @@ main {
   font-size: 12px;
   color: var(--header-text-secondary);
   line-height: 1.2;
+}
+
+.user-info .user-role {
+  background: transparent !important;
+  text-transform: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  width: auto !important;
 }
 
 .chevron {
@@ -515,7 +520,7 @@ main {
 .user-details .user-role {
   font-size: 12px;
   color: var(--header-text-secondary);
-  background: var(--header-btn-hover);
+  background: transparent;
   padding: 2px 8px;
   border-radius: 12px;
   display: inline-block;

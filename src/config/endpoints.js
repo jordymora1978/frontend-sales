@@ -16,6 +16,8 @@ export const ENDPOINTS = {
   ADMIN: {
     USERS: '/admin/users',
     ROLE_PERMISSIONS: '/admin/role-permissions',
+    GET_ROLE_PERMISSIONS: '/admin/role-permissions',
+    UPDATE_ROLE_PERMISSIONS: '/admin/save-role-permissions',
     SAVE_ROLE_PERMISSIONS: '/admin/save-role-permissions',
     SAVE_RESTRICTED_PAGES: '/admin/save-restricted-pages',
     SAVE_USER_RESTRICTIONS: '/admin/save-user-restrictions'

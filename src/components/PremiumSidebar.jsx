@@ -30,7 +30,9 @@ import {
   Tag,
   Key,
   Shield,
-  Crown
+  Crown,
+  ShoppingCart,
+  BarChart3
 } from 'lucide-react';
 import './PremiumSidebar.css';
 import { useAuth } from '../context/AuthContext';
@@ -236,28 +238,59 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
     loadDynamicMenu();
   }, [user]);
 
-  // System section pages (always visible but filtered by permissions)
-  const systemPages = [
-    { id: 'ml-stores', name: 'Mis Tiendas', icon: Package, path: '/ml-stores' },
-    { id: 'ml-sync', name: 'Sincronizar Órdenes', icon: RefreshCw, path: '/ml-sync' },
-    { id: 'apis-conexiones', name: 'APIs y Conexiones', icon: Key, path: '/apis-conexiones' },
-    { id: 'mis-etiquetas', name: 'Mis Etiquetas', icon: Tag, path: '/mis-etiquetas' },
-    { id: 'control-consolidador', name: 'Consolidador 2.0', icon: Archive, path: '/control-consolidador' },
-    { id: 'control-validador', name: 'Validador', icon: CheckCircle2, path: '/control-validador' },
-    { id: 'control-trm', name: 'TRM Monitor', icon: DollarSign, path: '/control-trm' },
-    { id: 'control-gmail-drive', name: 'Gmail Drive', icon: Mail, path: '/control-gmail-drive' },
-    { id: 'google-api', name: 'Google API', icon: Cloud, path: '/google-api' },
-    { id: 'catalogo-amazon', name: 'Catálogo Amazon', icon: Package, path: '/catalogo-amazon' },
-    { id: 'publicaciones-ml', name: 'Publicaciones ML', icon: ShoppingBag, path: '/publicaciones-ml' },
-    { id: 'stock-proveedores', name: 'Stock Proveedores', icon: Truck, path: '/stock-proveedores' }
+  // Páginas sin padre (sueltas)
+  const standalonePages = [
+    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { id: 'orders2_0', name: 'Mis Ventas', icon: ShoppingCart, path: '/orders2_0' },
+    { id: 'customers', name: 'Mis Clientes', icon: Users, path: '/customers' },
+    { id: 'quotes', name: 'Mis Cotizaciones', icon: FileText, path: '/quotes' }
   ];
 
-  // Admin pages (requires special permissions)
-  const adminPages = [
-    { id: 'admin-panel', name: 'Panel Admin', icon: Shield, path: '/admin' },
-    { id: 'admin-users', name: 'Gestionar Usuarios', icon: User, path: '/admin/users' },
-    { id: 'admin-system', name: 'Monitor Sistema', icon: Activity, path: '/admin/system' }
-  ];
+  // Grupos con hijos
+  const groupedPages = {
+    settings: {
+      name: 'Configuraciones',
+      icon: Settings,
+      children: [
+        { id: 'mis-etiquetas', name: 'Mis Etiquetas', path: '/mis-etiquetas' },
+        { id: 'ml-stores', name: 'Mis Tiendas', path: '/ml-stores' },
+        { id: 'apis-conexiones', name: 'APIs y Conexiones', path: '/apis-conexiones' },
+        { id: 'ml-sync', name: 'Sincronizar Órdenes', path: '/ml-sync' }
+      ]
+    },
+    businessReports: {
+      name: 'Reportes',
+      icon: BarChart3,
+      children: [
+        { id: 'control-consolidador', name: 'Consolidador 2.0', path: '/control-consolidador' },
+        { id: 'control-validador', name: 'Validador', path: '/control-validador' },
+        { id: 'control-trm', name: 'TRM Monitor', path: '/control-trm' },
+        { id: 'control-reportes', name: 'Reportes', path: '/control-reportes' },
+        { id: 'control-gmail-drive', name: 'Gmail Drive', path: '/control-gmail-drive' },
+        { id: 'google-api', name: 'Google API', path: '/google-api' }
+      ]
+    },
+    productManagement: {
+      name: 'Productos',
+      icon: Package,
+      children: [
+        { id: 'catalogo-amazon', name: 'Catálogo Amazon', path: '/catalogo-amazon' },
+        { id: 'publicaciones-ml', name: 'Publicaciones ML', path: '/publicaciones-ml' },
+        { id: 'stock-proveedores', name: 'Stock Proveedores', path: '/stock-proveedores' }
+      ]
+    },
+    admin: {
+      name: 'Admin',
+      icon: Shield,
+      children: [
+        { id: 'admin-panel', name: 'Panel Admin', path: '/admin' },
+        { id: 'admin-users', name: 'Gestionar Usuarios', path: '/admin/users' },
+        { id: 'admin-system', name: 'Monitor Sistema', path: '/admin/system' },
+        { id: 'custom-menu', name: 'Menú Personalizado', path: '/admin/custom-menu' },
+        { id: 'private-pages', name: 'Páginas Privadas', path: '/admin/private-pages' }
+      ]
+    }
+  };
 
   const toggleExpanded = (itemId) => {
     const newExpanded = new Set(expandedItems);
@@ -317,395 +350,109 @@ const PremiumSidebar = ({ isMobile, showMobileMenu, setShowMobileMenu }) => {
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <div className="nav-section">
-            {!isCollapsed && (
-              <div className="section-label">NAVEGACIÓN</div>
-            )}
-            
-            {menuItems.filter(item => hasPagePermission(item.id)).map(item => (
-              <div key={item.id} className="nav-item-wrapper">
-                {item.isGroup ? (
-                  <>
-                    <button
-                      className={`nav-item nav-group ${
-                        expandedItems.has(item.id) ? 'expanded' : ''
-                      }`}
-                      onClick={() => toggleExpanded(item.id)}
-                      onMouseEnter={() => setHoveredItem(item.id)}
-                      onMouseLeave={() => setHoveredItem(null)}
-                    >
-                      <div className="item-content">
-                        <item.icon className="item-icon" size={18} />
-                        {!isCollapsed && (
-                          <>
-                            <span className="item-name">{item.name}</span>
-                            <ChevronRight className={`expand-icon ${
-                              expandedItems.has(item.id) ? 'expanded' : ''
-                            }`} size={14} />
-                          </>
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && hoveredItem === item.id && (
-                      <div className="sidebar-tooltip">
-                        <div className="tooltip-title">{item.name}</div>
-                        <div className="tooltip-items">
-                          {item.items.map(subItem => (
-                            <button
-                              key={subItem.id}
-                              className="tooltip-item"
-                              onClick={() => handleItemClick(subItem.id)}
-                            >
-                              <subItem.icon size={14} />
-                              <span>{subItem.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Expanded subitems - Show for both collapsed and expanded states */}
-                    {expandedItems.has(item.id) && (
-                      <div className="sub-items">
-                        {item.items.map(subItem => (
-                          <Link
-                            key={subItem.id}
-                            to={subItem.path}
-                            className={`nav-item sub-item ${
-                              activeTab === subItem.id ? 'active' : ''
-                            }`}
-                            onClick={handleItemClick}
-                            onMouseEnter={() => isCollapsed && setHoveredItem(subItem.id)}
-                            onMouseLeave={() => isCollapsed && setHoveredItem(null)}
-                          >
-                            <div className="item-content">
-                              <subItem.icon className="item-icon" size={16} />
-                              {!isCollapsed && (
-                                <span className="item-name">{subItem.name}</span>
-                              )}
-                            </div>
-                            
-                            {/* Tooltip for collapsed sub-items */}
-                            {isCollapsed && hoveredItem === subItem.id && (
-                              <div className="sidebar-tooltip">
-                                {subItem.name}
-                              </div>
-                            )}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    to={item.path}
-                    className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                    onClick={handleItemClick}
-                    onMouseEnter={() => setHoveredItem(item.id)}
-                    onMouseLeave={() => setHoveredItem(null)}
-                  >
-                    <div className="item-content">
-                      <item.icon className="item-icon" size={18} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="item-name">{item.name}</span>
-                          {item.badge && (
-                            <span className={`item-badge ${
-                              item.badge === 'new' ? 'badge-new' : ''
-                            }`}>
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && hoveredItem === item.id && (
-                      <div className="sidebar-tooltip">
-                        {item.name}
-                      </div>
-                    )}
-                  </Link>
-                )}
+          {/* Páginas sueltas (sin padre) */}
+          {standalonePages.filter(page => hasPagePermission(page.id)).map(page => (
+            <Link
+              key={page.id}
+              to={page.path}
+              className={`nav-item ${activeTab === page.id ? 'active' : ''}`}
+              onClick={handleItemClick}
+            >
+              <div className="item-content">
+                <page.icon className="item-icon" size={18} />
+                {!isCollapsed && <span className="item-name">{page.name}</span>}
               </div>
-            ))}
-          </div>
+            </Link>
+          ))}
 
-
-          {/* Bottom Section */}
-          {!isCollapsed && (
-            <div className="nav-section nav-bottom">
-              <div className="section-label">SISTEMA</div>
-              
-              {sectionHasPermissions(configPages) && (
-                <button
-                  className={`nav-item nav-group ${
-                    expandedItems.has('configuracion') ? 'expanded' : ''
-                  }`}
-                  onClick={() => toggleExpanded('configuracion')}
-                >
-                  <div className="item-content">
-                    <Settings className="item-icon" size={18} />
-                    <span className="item-name">Configuración</span>
-                    <ChevronRight className={`expand-icon ${
-                      expandedItems.has('configuracion') ? 'expanded' : ''
-                    }`} size={14} />
-                  </div>
-                </button>
-              )}
-              
-              {expandedItems.has('configuracion') && (
-                <div className="sub-items">
-                  {hasPagePermission('ml-stores') && (
-                    <Link 
-                      to="/ml-stores"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Package className="item-icon" size={16} />
-                        <span className="item-name">Mis Tiendas</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('ml-sync') && (
-                    <Link 
-                      to="/ml-sync"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <RefreshCw className="item-icon" size={16} />
-                        <span className="item-name">Sincronizar Órdenes</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('apis-conexiones') && (
-                    <Link 
-                      to="/apis-conexiones"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Key className="item-icon" size={16} />
-                        <span className="item-name">APIs y Conexiones</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('mis-etiquetas') && (
-                    <Link 
-                      to="/mis-etiquetas"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Tag className="item-icon" size={16} />
-                        <span className="item-name">Mis Etiquetas</span>
-                      </div>
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {sectionHasPermissions(controlPages) && (
-                <button
-                  className={`nav-item nav-group ${
-                    expandedItems.has('control') ? 'expanded' : ''
-                  }`}
-                  onClick={() => toggleExpanded('control')}
-                >
-                  <div className="item-content">
-                    <FolderOpen className="item-icon" size={18} />
-                    <span className="item-name">Control Suite</span>
-                    <ChevronRight className={`expand-icon ${
-                      expandedItems.has('control') ? 'expanded' : ''
-                    }`} size={14} />
-                  </div>
-                </button>
-              )}
-              
-              {expandedItems.has('control') && (
-                <div className="sub-items">
-                  {hasPagePermission('control-consolidador') && (
-                    <Link 
-                      to="/control-consolidador"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Archive className="item-icon" size={16} />
-                        <span className="item-name">Consolidador 2.0</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('control-validador') && (
-                    <Link 
-                      to="/control-validador"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <CheckCircle2 className="item-icon" size={16} />
-                        <span className="item-name">Validador</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('control-trm') && (
-                    <Link 
-                      to="/control-trm"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <DollarSign className="item-icon" size={16} />
-                        <span className="item-name">TRM Monitor</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('control-gmail-drive') && (
-                    <Link 
-                      to="/control-gmail-drive"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Mail className="item-icon" size={16} />
-                        <span className="item-name">Gmail Drive</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('google-api') && (
-                    <Link 
-                      to="/google-api"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Cloud className="item-icon" size={16} />
-                        <span className="item-name">Google API</span>
-                      </div>
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {sectionHasPermissions(productPages) && (
-                <button
-                  className={`nav-item nav-group ${
-                    expandedItems.has('products') ? 'expanded' : ''
-                  }`}
-                  onClick={() => toggleExpanded('products')}
-                >
-                  <div className="item-content">
-                    <Package className="item-icon" size={18} />
-                    <span className="item-name">Products Suit</span>
-                    <ChevronRight className={`expand-icon ${
-                      expandedItems.has('products') ? 'expanded' : ''
-                    }`} size={14} />
-                  </div>
-                </button>
-              )}
-              
-              {expandedItems.has('products') && (
-                <div className="sub-items">
-                  {hasPagePermission('catalogo-amazon') && (
-                    <Link 
-                      to="/catalogo-amazon"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Package className="item-icon" size={16} />
-                        <span className="item-name">Catálogo Amazon</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('publicaciones-ml') && (
-                    <Link 
-                      to="/publicaciones-ml"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <ShoppingBag className="item-icon" size={16} />
-                        <span className="item-name">Publicaciones ML</span>
-                      </div>
-                    </Link>
-                  )}
-                  {hasPagePermission('stock-proveedores') && (
-                    <Link 
-                      to="/stock-proveedores"
-                      className="nav-item sub-item"
-                      onClick={handleItemClick}
-                    >
-                      <div className="item-content">
-                        <Truck className="item-icon" size={16} />
-                        <span className="item-name">Stock Proveedores</span>
-                      </div>
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              <button className="nav-item">
+          {/* Grupos colapsables */}
+          {Object.entries(groupedPages).filter(([groupId, group]) => 
+            groupId !== 'admin' && // Admin se muestra en su propia sección
+            group.children.some(page => hasPagePermission(page.id))
+          ).map(([groupId, group]) => (
+            <div key={groupId}>
+              <button
+                className={`nav-item nav-group ${
+                  expandedItems.has(groupId) ? 'expanded' : ''
+                }`}
+                onClick={() => toggleExpanded(groupId)}
+              >
                 <div className="item-content">
-                  <HelpCircle className="item-icon" size={18} />
-                  <span className="item-name">Ayuda</span>
+                  <group.icon className="item-icon" size={18} />
+                  {!isCollapsed && (
+                    <>
+                      <span className="item-name">{group.name}</span>
+                      <ChevronRight className={`expand-icon ${
+                        expandedItems.has(groupId) ? 'expanded' : ''
+                      }`} size={14} />
+                    </>
+                  )}
                 </div>
               </button>
-
-              {/* Theme toggle removido - solo se usa en el header */}
-            </div>
-          )}
-
-          {/* Admin Section - Based on user permissions */}
-          {!isCollapsed && adminPages.filter(page => hasPagePermission(page.id)).length > 0 && (
-            <div className="nav-section nav-bottom">
-              <div className="section-label">ADMINISTRACIÓN</div>
               
-              {adminPages.filter(page => hasPagePermission(page.id)).map(page => (
-                <Link 
-                  key={page.id}
-                  to={page.path}
-                  className={`nav-item ${activeTab === page.id.replace('admin-', '') || activeTab === page.path.replace('/', '') ? 'active' : ''}`}
-                  onClick={handleItemClick}
-                >
-                  <div className="item-content">
-                    <page.icon className="item-icon" size={18} />
-                    <span className="item-name">{page.name}</span>
-                    {page.id === 'admin-panel' && <Crown className="item-badge badge-new" size={14} />}
-                  </div>
-                </Link>
-              ))}
+              {expandedItems.has(groupId) && (
+                <div className="sub-items">
+                  {group.children.filter(page => hasPagePermission(page.id)).map(page => (
+                    <Link
+                      key={page.id}
+                      to={page.path}
+                      className={`nav-item sub-item ${activeTab === page.id ? 'active' : ''}`}
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        {!isCollapsed && <span className="item-name">{page.name}</span>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+
+
+          {/* Sección vieja eliminada - ahora todo está en groupedPages */}
+
+          {/* Admin Section - Now part of groupedPages */}
+          {groupedPages.admin.children.filter(page => hasPagePermission(page.id)).length > 0 && (
+            <div>
+              <button
+                className={`nav-item nav-group ${
+                  expandedItems.has('admin') ? 'expanded' : ''
+                }`}
+                onClick={() => toggleExpanded('admin')}
+              >
+                <div className="item-content">
+                  <Shield className="item-icon" size={18} />
+                  <span className="item-name">Admin</span>
+                  <ChevronRight className={`expand-icon ${
+                    expandedItems.has('admin') ? 'expanded' : ''
+                  }`} size={14} />
+                </div>
+              </button>
+              
+              {expandedItems.has('admin') && (
+                <div className="sub-items">
+                  {groupedPages.admin.children.filter(page => hasPagePermission(page.id)).map(page => (
+                    <Link 
+                      key={page.id}
+                      to={page.path}
+                      className={`nav-item sub-item ${activeTab === page.id.replace('admin-', '') || activeTab === page.path.replace('/', '') ? 'active' : ''}`}
+                      onClick={handleItemClick}
+                    >
+                      <div className="item-content">
+                        <span className="item-name">{page.name}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </nav>
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          <div className="user-section">
-            <div className="user-avatar">
-              <User size={16} />
-            </div>
-            {!isCollapsed && (
-              <div className="user-info">
-                <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
-                <div className="user-role">{getRoleDisplayName()}</div>
-              </div>
-            )}
-            {!isCollapsed && (
-              <button 
-                className="logout-btn" 
-                title="Cerrar sesión"
-                onClick={logout}
-              >
-                <LogOut size={16} />
-              </button>
-            )}
-          </div>
 
           {/* Activity Indicator */}
           {!isCollapsed && (

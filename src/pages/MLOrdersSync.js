@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Package, Store, RefreshCw, CheckCircle, AlertCircle, 
-  Clock, DollarSign, User, Calendar, ExternalLink,
-  ShoppingCart, TrendingUp, Filter, Download
-} from 'lucide-react';
 import apiService from '../services/api';
-import MLOrders from '../components/MLOrders.js';
-import './MLOrdersSync.css';
 
-const MLOrdersSync = () => {
+const SincOrdersMeli = () => {
   const [stores, setStores] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [syncLoading, setSyncLoading] = useState(false);
-  const [updateLoading, setUpdateLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [syncStats, setSyncStats] = useState(null);
-  const [viewMode, setViewMode] = useState('cards'); // cards or table
+  const [expandedOrder, setExpandedOrder] = useState(null); // Solo una orden expandida a la vez
 
   useEffect(() => {
     loadStores();
@@ -25,352 +15,216 @@ const MLOrdersSync = () => {
 
   const loadStores = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Obtener tiendas conectadas
       const response = await apiService.getMLStores();
       setStores(response || []);
-      
-      // Auto-seleccionar primera tienda si hay una
       if (response && response.length > 0) {
-        const activeStore = response.find(s => s.is_connected) || response[0];
-        setSelectedStore(activeStore);
+        setSelectedStore(response[0]);
       }
     } catch (error) {
-      console.error('Error loading stores:', error);
-      setError('Error al cargar las tiendas: ' + error.message);
+      setError('Error loading stores: ' + error.message);
+    }
+  };
+
+  const loadOrders = async () => {
+    if (!selectedStore) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.request(`/api/ml/stores/${selectedStore.id}/orders`);
+      setOrders(response.orders || []);
+    } catch (error) {
+      setError('Error loading orders: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSyncOrders = async () => {
-    if (!selectedStore) {
-      setError('Por favor selecciona una tienda primero');
-      return;
-    }
-
-    try {
-      setSyncLoading(true);
-      setError(null);
-      setSuccessMessage('');
-      
-      // Llamar endpoint de sincronización
-      const response = await apiService.request(`/api/ml/stores/${selectedStore.id}/sync-orders`, {
-        method: 'POST'
-      });
-      
-      setSyncStats(response);
-      setSuccessMessage(`✅ Sincronización exitosa: ${response.orders_synced || 0} órdenes procesadas`);
-      
-      // Recargar el componente de órdenes
-      if (window.mlOrdersRef) {
-        window.mlOrdersRef.loadOrders();
-      }
-    } catch (error) {
-      console.error('Error syncing orders:', error);
-      setError('Error al sincronizar: ' + error.message);
-    } finally {
-      setSyncLoading(false);
-    }
-  };
-
-  const handleUpdateOrders = async () => {
-    if (!selectedStore) {
-      setError('Por favor selecciona una tienda primero');
-      return;
-    }
-
-    try {
-      setUpdateLoading(true);
-      setError(null);
-      setSuccessMessage('');
-      
-      // Llamar endpoint de actualización
-      const response = await apiService.request(`/api/ml/stores/${selectedStore.id}/update-orders`, {
-        method: 'POST'
-      });
-      
-      setSyncStats(response);
-      setSuccessMessage(`🔄 Actualización exitosa: ${response.orders_updated || 0} órdenes actualizadas de ${response.total_existing || 0} existentes`);
-      
-      // Recargar el componente de órdenes
-      if (window.mlOrdersRef) {
-        window.mlOrdersRef.loadOrders();
-      }
-    } catch (error) {
-      console.error('Error updating orders:', error);
-      setError('Error al actualizar órdenes: ' + error.message);
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
-  const handleRefreshToken = async (storeId) => {
-    try {
-      const response = await apiService.request(`/api/ml/refresh-token/${storeId}`, {
-        method: 'POST'
-      });
-      setSuccessMessage('✅ Token actualizado exitosamente');
-      loadStores(); // Recargar tiendas
-    } catch (error) {
-      setError('Error al actualizar token: ' + error.message);
-    }
-  };
-
-  const getStoreStatusColor = (store) => {
-    if (!store.is_connected) return '#dc3545';
-    if (store.token_expires_at) {
-      const expiry = new Date(store.token_expires_at);
-      const now = new Date();
-      const hoursLeft = (expiry - now) / (1000 * 60 * 60);
-      if (hoursLeft < 24) return '#ffc107'; // Warning - expires soon
-    }
-    return '#28a745'; // Connected and healthy
+  const handleOrderClick = (orderId) => {
+    // Si la orden ya está expandida, la colapsa. Si no, la expande
+    setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
   return (
-    <div className="ml-orders-sync-page">
-      {/* Header */}
-      <div className="sync-header">
-        <div className="header-content">
-          <div className="header-title">
-            <Package size={32} className="header-icon" />
-            <div>
-              <h1>Sincronización de Órdenes MercadoLibre</h1>
-              <p className="header-subtitle">
-                Importa y gestiona tus órdenes de MercadoLibre en tiempo real
-              </p>
-            </div>
-          </div>
-          
-          <div className="header-actions">
-            <button 
-              className="btn btn-primary"
-              onClick={handleSyncOrders}
-              disabled={!selectedStore || syncLoading || updateLoading}
-            >
-              {syncLoading ? (
-                <>
-                  <RefreshCw size={18} className="spin" />
-                  Sincronizando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw size={18} />
-                  Sincronizar Ahora
-                </>
-              )}
-            </button>
-            
-            <button 
-              className="btn btn-secondary ml-2"
-              onClick={handleUpdateOrders}
-              disabled={!selectedStore || syncLoading || updateLoading}
-              title="Actualiza las órdenes ya sincronizadas para detectar cambios"
-            >
-              {updateLoading ? (
-                <>
-                  <Download size={18} className="spin" />
-                  Actualizando...
-                </>
-              ) : (
-                <>
-                  <Download size={18} />
-                  Actualizar Órdenes
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        {syncStats && (
-          <div className="sync-stats-bar">
-            <div className="stat-item">
-              <span className="stat-label">Órdenes Sincronizadas</span>
-              <span className="stat-value">{syncStats.orders_synced || 0}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Total en Sistema</span>
-              <span className="stat-value">{syncStats.total_orders || 0}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">Última Sincronización</span>
-              <span className="stat-value">
-                {new Date().toLocaleTimeString('es-CO')}
-              </span>
-            </div>
-          </div>
-        )}
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1>📦 Órdenes MercadoLibre - Vista Colapsable</h1>
+      
+      {/* Store Selector */}
+      <div style={{ marginBottom: '20px' }}>
+        <label>Tienda: </label>
+        <select 
+          value={selectedStore?.id || ''} 
+          onChange={(e) => {
+            const store = stores.find(s => s.id === parseInt(e.target.value));
+            setSelectedStore(store);
+          }}
+          style={{ padding: '5px', marginRight: '10px' }}
+        >
+          {stores.map(store => (
+            <option key={store.id} value={store.id}>
+              {store.nickname}
+            </option>
+          ))}
+        </select>
+        <button 
+          onClick={loadOrders} 
+          disabled={loading || !selectedStore}
+          style={{ 
+            padding: '5px 15px', 
+            backgroundColor: '#28a745', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '3px',
+            cursor: loading || !selectedStore ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {loading ? 'Cargando...' : 'Cargar Órdenes'}
+        </button>
       </div>
 
-      {/* Messages */}
+      {/* Error Message */}
       {error && (
-        <div className="alert alert-error">
-          <AlertCircle size={18} />
+        <div style={{ 
+          padding: '10px', 
+          backgroundColor: '#f8d7da', 
+          color: '#721c24', 
+          borderRadius: '5px',
+          marginBottom: '20px'
+        }}>
           {error}
         </div>
       )}
-      
-      {successMessage && (
-        <div className="alert alert-success">
-          <CheckCircle size={18} />
-          {successMessage}
-        </div>
-      )}
 
-      {/* Store Selector */}
-      <div className="store-selector-section">
-        <h2 className="section-title">
-          <Store size={20} />
-          Selecciona una Tienda
-        </h2>
-        
-        {loading ? (
-          <div className="loading-container">
-            <RefreshCw size={32} className="spin" />
-            <p>Cargando tiendas...</p>
-          </div>
-        ) : stores.length === 0 ? (
-          <div className="no-stores-message">
-            <AlertCircle size={48} />
-            <h3>No hay tiendas conectadas</h3>
-            <p>Primero debes conectar una tienda de MercadoLibre</p>
-            <button className="btn btn-primary">
-              Conectar Tienda
-            </button>
-          </div>
-        ) : (
-          <div className="stores-grid">
-            {stores.map((store) => (
+      {/* Orders List */}
+      {orders.length > 0 && (
+        <div>
+          <h3>Total de órdenes: {orders.length}</h3>
+          {orders.map(order => (
+            <div 
+              key={order.id} 
+              style={{ 
+                marginBottom: '10px',
+                border: '1px solid #ddd',
+                borderRadius: '5px',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Order Header - Clickable */}
               <div 
-                key={store.id}
-                className={`store-card ${selectedStore?.id === store.id ? 'selected' : ''}`}
-                onClick={() => setSelectedStore(store)}
+                onClick={() => handleOrderClick(order.id)}
+                style={{ 
+                  padding: '15px',
+                  backgroundColor: expandedOrder === order.id ? '#f0f8ff' : '#f9f9f9',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.3s',
+                  ':hover': {
+                    backgroundColor: '#e9e9e9'
+                  }
+                }}
               >
-                <div className="store-card-header">
-                  <div className="store-info">
-                    <h3>{store.store_name || store.nickname}</h3>
-                    <p className="store-site">{store.site_name} ({store.site_id})</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>#{order.id}</strong> - {order.buyer?.nickname || 'Sin nombre'}
                   </div>
-                  <div 
-                    className="store-status"
-                    style={{ backgroundColor: getStoreStatusColor(store) }}
-                  >
-                    {store.is_connected ? 'Conectada' : 'Desconectada'}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <span style={{ 
+                      padding: '3px 8px', 
+                      backgroundColor: order.status === 'paid' ? '#28a745' : '#6c757d',
+                      color: 'white',
+                      borderRadius: '3px',
+                      fontSize: '12px'
+                    }}>
+                      {order.status}
+                    </span>
+                    <span style={{ fontWeight: 'bold' }}>
+                      ${order.total_amount?.toFixed(2) || '0.00'}
+                    </span>
+                    <span style={{ fontSize: '20px' }}>
+                      {expandedOrder === order.id ? '▼' : '▶'}
+                    </span>
                   </div>
                 </div>
-                
-                <div className="store-card-body">
-                  <div className="store-meta">
-                    <div className="meta-item">
-                      <User size={14} />
-                      <span>{store.ml_nickname || 'N/A'}</span>
-                    </div>
-                    <div className="meta-item">
-                      <Calendar size={14} />
-                      <span>
-                        {store.connected_at 
-                          ? new Date(store.connected_at).toLocaleDateString('es-CO')
-                          : 'No conectada'}
-                      </span>
-                    </div>
-                  </div>
+              </div>
+
+              {/* Order Details - Expandible */}
+              {expandedOrder === order.id && (
+                <div style={{ 
+                  padding: '15px',
+                  backgroundColor: '#ffffff',
+                  borderTop: '1px solid #ddd'
+                }}>
+                  <h4>Detalles de la Orden</h4>
                   
-                  {store.is_connected && (
-                    <div className="store-actions">
-                      <button 
-                        className="btn btn-sm btn-outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRefreshToken(store.id);
-                        }}
-                      >
-                        <RefreshCw size={14} />
-                        Actualizar Token
-                      </button>
+                  {/* Customer Info */}
+                  <div style={{ marginBottom: '15px' }}>
+                    <strong>Cliente:</strong><br />
+                    Nombre: {order.buyer?.first_name} {order.buyer?.last_name}<br />
+                    Email: {order.buyer?.email || 'No disponible'}<br />
+                    Teléfono: {order.buyer?.phone?.number || 'No disponible'}
+                  </div>
+
+                  {/* Items */}
+                  <div style={{ marginBottom: '15px' }}>
+                    <strong>Productos:</strong>
+                    {order.order_items?.map((item, index) => (
+                      <div key={index} style={{ 
+                        padding: '10px',
+                        backgroundColor: '#f9f9f9',
+                        marginTop: '5px',
+                        borderRadius: '3px'
+                      }}>
+                        <div>{item.item?.title || 'Sin título'}</div>
+                        <div style={{ fontSize: '14px', color: '#666' }}>
+                          Cantidad: {item.quantity} | 
+                          Precio: ${item.unit_price?.toFixed(2) || '0.00'} | 
+                          Total: ${(item.quantity * item.unit_price).toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Shipping */}
+                  {order.shipping && (
+                    <div style={{ marginBottom: '15px' }}>
+                      <strong>Envío:</strong><br />
+                      {order.shipping.receiver_address && (
+                        <>
+                          {order.shipping.receiver_address.street_name} {order.shipping.receiver_address.street_number}<br />
+                          {order.shipping.receiver_address.city?.name}, {order.shipping.receiver_address.state?.name}<br />
+                          CP: {order.shipping.receiver_address.zip_code}
+                        </>
+                      )}
                     </div>
                   )}
-                </div>
-                
-                {selectedStore?.id === store.id && (
-                  <div className="store-selected-indicator">
-                    <CheckCircle size={16} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Orders Display */}
-      {selectedStore && selectedStore.is_connected && (
-        <div className="orders-section">
-          <div className="section-header">
-            <h2 className="section-title">
-              <ShoppingCart size={20} />
-              Órdenes de {selectedStore.store_name || selectedStore.nickname}
-            </h2>
-            
-            <div className="view-toggle">
-              <button 
-                className={`toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
-                onClick={() => setViewMode('cards')}
-              >
-                Vista Tarjetas
-              </button>
-              <button 
-                className={`toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-              >
-                Vista Tabla
-              </button>
+                  {/* Payment */}
+                  <div>
+                    <strong>Pago:</strong><br />
+                    Total: ${order.total_amount?.toFixed(2) || '0.00'}<br />
+                    Estado: {order.status}<br />
+                    Fecha: {new Date(order.date_created).toLocaleString()}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          
-          {/* Componente MLOrders existente */}
-          <MLOrders 
-            store={selectedStore} 
-            viewMode={viewMode}
-            ref={(ref) => window.mlOrdersRef = ref}
-          />
+          ))}
         </div>
       )}
 
-      {/* Help Section */}
-      <div className="help-section">
-        <h3>¿Cómo funciona la sincronización?</h3>
-        <div className="help-grid">
-          <div className="help-card">
-            <div className="help-number">1</div>
-            <h4>Selecciona Tienda</h4>
-            <p>Elige la tienda de MercadoLibre de la que quieres importar órdenes</p>
-          </div>
-          <div className="help-card">
-            <div className="help-number">2</div>
-            <h4>Sincroniza</h4>
-            <p>Haz clic en "Sincronizar Ahora" para importar las últimas órdenes</p>
-          </div>
-          <div className="help-card">
-            <div className="help-number">3</div>
-            <h4>Gestiona</h4>
-            <p>Ve y administra todas tus órdenes en un solo lugar</p>
-          </div>
+      {/* No Orders Message */}
+      {!loading && orders.length === 0 && selectedStore && (
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: '5px',
+          textAlign: 'center',
+          color: '#666'
+        }}>
+          No se encontraron órdenes. Haz clic en "Cargar Órdenes" para buscar.
         </div>
-        
-        <div className="help-note">
-          <AlertCircle size={16} />
-          <p>
-            <strong>Nota:</strong> La sincronización trae las últimas 50 órdenes por defecto. 
-            Para sincronización completa, contacta al administrador.
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default MLOrdersSync;
+export default SincOrdersMeli;

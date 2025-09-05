@@ -165,7 +165,7 @@ body {
    ======================================== */
 
 .premium-sidebar {
-  width: 320px;
+  width: 250px;
   height: 100vh;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-primary);
@@ -359,14 +359,15 @@ body {
 .nav-item:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-  transform: translateX(2px);
 }
 
 .nav-item.active {
   background: var(--bg-active);
   color: var(--primary-600);
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .nav-item.active::before {

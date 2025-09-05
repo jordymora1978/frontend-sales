@@ -21,6 +21,25 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
   const { theme, toggleTheme } = themeContext || {};
   const { user, logout } = useAuth();
 
+  // Function to get role display name with emoji
+  const getRoleDisplayName = () => {
+    if (!user?.roles || user.roles.length === 0) {
+      return 'Usuario';
+    }
+
+    const role = user.roles[0];
+    const roleNames = {
+      'super_admin': 'Super Admin',
+      'admin': 'Administrador', 
+      'asesor': 'Asesor',
+      'marketplace': 'Marketplace',
+      'dropshipper': 'Dropshipper',
+      'proveedor': 'Proveedor'
+    };
+    
+    return roleNames[role] || role;
+  };
+
   // Funciones de breadcrumb eliminadas - ya no se usan
 
   const notifications = [
@@ -121,7 +140,7 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
                 </div>
                 <div className="user-info">
                   <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
-                  <div className="user-role">{user?.roles?.[0] || 'Sin rol'}</div>
+                  <div className="user-role">{getRoleDisplayName()}</div>
                 </div>
                 <ChevronDown size={14} className={`chevron ${showUserMenu ? 'rotated' : ''}`} />
               </button>
@@ -141,7 +160,7 @@ const PremiumHeader = ({ activeTab, onToggleMobileSidebar }) => {
                       <div className="user-details">
                         <div className="user-name">{user?.first_name || 'Usuario'} {user?.last_name || ''}</div>
                         <div className="user-email">{user?.email || 'No email'}</div>
-                        <div className="user-role">{user?.roles?.[0] || 'Sin rol'}</div>
+                        <div className="user-role">{getRoleDisplayName()}</div>
                       </div>
                     </div>
                     

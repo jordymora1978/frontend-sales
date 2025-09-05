@@ -232,7 +232,9 @@ class MenuJSONService {
       'stock-proveedores': { id: 'stock-proveedores', name: 'Stock Proveedores', icon: 'Truck', path: '/stock-proveedores', order: 17 },
       'admin-panel': { id: 'admin-panel', name: 'Panel Admin', icon: 'Shield', path: '/admin', order: 18 },
       'admin-users': { id: 'admin-users', name: 'Gestionar Usuarios', icon: 'User', path: '/admin/users', order: 19 },
-      'admin-system': { id: 'admin-system', name: 'Monitor Sistema', icon: 'Activity', path: '/admin/system', order: 20 }
+      'admin-system': { id: 'admin-system', name: 'Monitor del Sistema', icon: 'Activity', path: '/admin/system', order: 20 },
+      'custom-menu': { id: 'custom-menu', name: 'Menú Personalizado', icon: 'Menu', path: '/admin/custom-menu', order: 21 },
+      'private-pages': { id: 'private-pages', name: 'Páginas Privadas', icon: 'Lock', path: '/admin/private-pages', order: 22 }
     };
     
     const mainMenu = [];
